@@ -59,6 +59,7 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <limits.h>
 
 #if (!defined(__umesh_both__))
 # if defined(__CUDA_ARCH__)
@@ -190,6 +191,20 @@ namespace umesh {
     vec3f size() const;
     vec3f center() const;
   };
+  struct box3i {
+    vec3i lower, upper;
+    box3i() : lower(INT_MAX), upper(INT_MIN) {}//= default;
+    box3i(const vec3i& lower, const vec3i& upper) : lower{lower}, upper{upper} { }
+    inline bool  empty()  const
+    { return (upper.x < lower.x) || (upper.y < lower.y) || (upper.z < lower.z); }
+    static box3i empty_box() { return box3i(vec3i(INT_MAX), vec3i(INT_MIN)); }
+    box3i including(const vec3i &other) const;
+    bool overlaps(const box3i &other) const;
+    void extend(const vec3i& a);
+    void extend(const box3i& a);
+    vec3i size() const;
+    vec3i center() const;
+  };
   struct box4f {
     vec4f lower, upper;
     box4f() : lower(FLT_MAX), upper(-FLT_MAX) {}//= default;
@@ -224,6 +239,8 @@ namespace umesh {
   inline vec3i operator*(const vec3i& a, float b) { return vec3i(a.x * b, a.y * b, a.z * b); }
   inline vec3i operator*(float a, const vec3i& b) { return vec3i(a * b.x, a * b.y, a * b.z); }
   inline vec3i operator*(const vec3i& a, const vec3i& b) { return vec3i(a.x * b.x, a.y * b.y, a.z * b.z); }
+  inline vec3i operator>>(const vec3i& a, int b) { return vec3i(a.x>>b, a.y>>b, a.z>>b); }
+  inline vec3i operator/(const vec3i& a, int b) { return vec3i(a.x/b, a.y/b, a.z/b); }
 
 
   inline affine3f operator*(const affine3f& a, const affine3f& b) { return affine3f(a.l * b.l, a.l * b.p + a.p); }
@@ -282,10 +299,16 @@ namespace umesh {
   { return std::min(std::min(v.x,v.y),v.z); }
   inline float max(float a, float b) { return a<b ? b:a; }
   inline float min(float a, float b) { return a>b ? b:a; }
+  inline int max(int a, int b) { return a<b ? b:a; }
+  inline int min(int a, int b) { return a>b ? b:a; }
   inline vec3f max(const vec3f& a, const vec3f& b) { return vec3f(max(a.x,b.x),max(a.y,b.y),max(a.z,b.z)); }
   inline vec3f min(const vec3f& a, const vec3f& b) { return vec3f(min(a.x,b.x),min(a.y,b.y),min(a.z,b.z)); }
+  inline vec3i max(const vec3i& a, const vec3i& b) { return vec3i(max(a.x,b.x),max(a.y,b.y),max(a.z,b.z)); }
+  inline vec3i min(const vec3i& a, const vec3i& b) { return vec3i(min(a.x,b.x),min(a.y,b.y),min(a.z,b.z)); }
   inline void box3f::extend(const vec3f& p) { lower=min(lower,p); upper=max(upper,p); }
+  inline void box3i::extend(const vec3i& p) { lower=min(lower,p); upper=max(upper,p); }
   inline void box3f::extend(const box3f& b) { lower=min(lower,b.lower); upper=max(upper,b.upper); }
+  inline void box3i::extend(const box3i& b) { lower=min(lower,b.lower); upper=max(upper,b.upper); }
 
   inline bool box3f::overlaps(const box3f &other) const
   {
@@ -305,6 +328,7 @@ namespace umesh {
   inline box3f box3f::including(const vec3f &other) const
   { return box3f{min(lower,other),max(upper,other)}; }
   inline vec3f box3f::size() const { return upper - lower; }
+  inline vec3i box3i::size() const { return upper - lower; }
   inline vec3f box3f::center() const { return 0.5f*(lower+upper); }
 
   inline std::ostream& operator<<(std::ostream& o, const range1f& v) { return o << "[" << v.lower << ".." << v.upper << "]"; }
