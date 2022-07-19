@@ -334,13 +334,14 @@ namespace umesh {
   inline std::ostream& operator<<(std::ostream& o, const range1f& v) { return o << "[" << v.lower << ".." << v.upper << "]"; }
   inline std::ostream& operator<<(std::ostream& o, const vec2f& v) { return o << "(" << v.x << "," << v.y << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const vec3f& v) { return o << "(" << v.x << "," << v.y << "," << v.z << ")"; }
+  inline std::ostream& operator<<(std::ostream& o, const vec3i& v) { return o << "(" << v.x << "," << v.y << "," << v.z << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const vec4f& v) { return o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const vec2i& v) { return o << "(" << v.x << "," << v.y << ")"; }
-  inline std::ostream& operator<<(std::ostream& o, const vec3i& v) { return o << "(" << v.x << "," << v.y << "," << v.z << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const vec4i& v) { return o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const mat3f& m) { return o << "{ vx = " << m.vx << ", vy = " << m.vy << ", vz = " << m.vz << "}"; }
   inline std::ostream& operator<<(std::ostream& o, const affine3f& m) { return o << "{ l = " << m.l << ", p = " << m.p << " }"; }
   inline std::ostream& operator<<(std::ostream &o, const box3f& b) { return o << "[" << b.lower <<":"<<b.upper<<"]"; }
+  inline std::ostream& operator<<(std::ostream &o, const box3i& b) { return o << "[" << b.lower <<":"<<b.upper<<"]"; }
 
   inline bool operator==(const vec2f &a, const vec2f &b)
   { return a.x==b.x && a.y==b.y; }
