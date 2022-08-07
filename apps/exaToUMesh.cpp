@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2018-2021 Ingo Wald                                            //
+// Copyright 2018-2022 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -738,15 +738,10 @@ namespace umesh {
       throw std::runtime_error("bug in exa::find()");
 
     const int cellWidth = (1<<cell.level);
-    bool dbg = false;
-    
-    // if (cell.center() == vec3f(1,1,9)) dbg = true;
     
     for (int dz=-1;dz<=1;dz+=2)
       for (int dy=-1;dy<=1;dy+=2)
         for (int dx=-1;dx<=1;dx+=2) {
-          if (dbg)
-            std::cout << "--------------------------------------------" << std::endl;
           int corner[2][2][2];
           int minLevel = 1000;
           int maxLevel = -1;
@@ -754,11 +749,8 @@ namespace umesh {
           for (int iz=0;iz<2;iz++)
             for (int iy=0;iy<2;iy++)
               for (int ix=0;ix<2;ix++) {
-                // PRINT(vec3i(ix,iy,iz));
                 const vec3f cornerCenter = cell.neighbor(vec3i(dx*ix,dy*iy,dz*iz)).center();
-                // if (cornerCenter == vec3f(1,1,9)) dbg = true;
                 
-                // PRINT(cornerCenter);
                 if (!exa.find(corner[iz][iy][ix],cornerCenter))
                   // corner does not exist, this is not a dual cell
                   continue;
@@ -768,19 +760,6 @@ namespace umesh {
                 ++numFound;
               }
 
-          if (dbg) {
-            PING;
-            PRINT(cell);
-            PRINT(vec3i(dx,dy,dz));
-            for (int iz=0;iz<2;iz++)
-              for (int iy=0;iy<2;iy++)
-                for (int ix=0;ix<2;ix++)
-                  PRINT(corner[iz][iy][ix]);
-            PRINT(numFound);
-            PRINT(cell);
-            PRINT(minLevel);
-          }
-          
           if (numFound < 8)
             continue;
           
@@ -811,19 +790,8 @@ namespace umesh {
             for (int iy=0;iy<2;iy++)
               for (int ix=0;ix<2;ix++) {
                 const Exa::Cell &c = exa.cellList[corner[iz][iy][ix]];
-                if (dbg) PRINT(c);
                 vertex[iz][iy][ix] = vec4f(c.center(),c.scalar);
               }
-
-
-          // const vec4f &v000 = vertex[0][0][0];
-          // const vec4f &v001 = vertex[0][0][1];
-          // const vec4f &v010 = vertex[0][1][0];
-          // const vec4f &v011 = vertex[0][1][1];
-          // const vec4f &v100 = vertex[1][0][0];
-          // const vec4f &v101 = vertex[1][0][1];
-          // const vec4f &v110 = vertex[1][1][0];
-          // const vec4f &v111 = vertex[1][1][1];
 
           // VTK order
           std::array<vec4f,8> v;
@@ -848,17 +816,6 @@ namespace umesh {
             v[7] = vertex[1][1][0];
           }
 
-          if (dbg) {
-            PING;
-            PRINT(cell);
-            PRINT(cellWidth);
-            PRINT(dx);
-            PRINT(dy);
-            PRINT(dz);
-            for (auto vtx : v)
-              PRINT(vtx);
-          }
-          
           std::set<vec4f> uniqueVertices;
           for (auto vtx : v)
             uniqueVertices.insert(vtx);
