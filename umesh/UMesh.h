@@ -353,13 +353,40 @@ namespace umesh {
     
     inline box3f getBounds() const
     {
+      box3f bounds;
+      for (int i=0;i<tets.size();i++)
+        bounds.extend(getTetBounds(i));
+      for (int i=0;i<pyrs.size();i++)
+        bounds.extend(getPyrBounds(i));
+      for (int i=0;i<wedges.size();i++)
+        bounds.extend(getWedgeBounds(i));
+      for (int i=0;i<hexes.size();i++)
+        bounds.extend(getHexBounds(i));
       return bounds;
     }
 
     inline box4f getBounds4f() const
     {
-      return box4f(vec4f(bounds.lower,perVertex->valueRange.lower),
-                   vec4f(bounds.upper,perVertex->valueRange.upper));
+      box3f bounds;
+      range1f valueRange;
+      for (int i=0;i<tets.size();i++) {
+        bounds.extend(getTetBounds(i));
+        valueRange.extend(getTetValueRange(i));
+      }
+      for (int i=0;i<pyrs.size();i++) {
+        bounds.extend(getPyrBounds(i));
+        valueRange.extend(getPyrValueRange(i));
+      }
+      for (int i=0;i<wedges.size();i++) {
+        bounds.extend(getWedgeBounds(i));
+        valueRange.extend(getWedgeValueRange(i));
+      }
+      for (int i=0;i<hexes.size();i++) {
+        bounds.extend(getHexBounds(i));
+        valueRange.extend(getHexValueRange(i));
+      }
+      
+      return {vec4f(bounds.lower,valueRange.lower),vec4f(bounds.upper,valueRange.upper)};
     }
     
 
