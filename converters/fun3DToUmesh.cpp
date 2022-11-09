@@ -120,15 +120,13 @@ namespace umesh {
         +std::to_string(rank);
       std::cout << "reading time step " << timeStep
                 << " from " << scalarsFileName << std::endl;
-      
+
       std::vector<size_t> globalVertexIDs;
-      std::vector<float> scalars
-        = io::fun3d::readTimeStep(scalarsFileName,variable,timeStep,
+      std::vector<float> scalars;
+      try {
+        scalars = io::fun3d::readTimeStep(scalarsFileName,variable,timeStep,
                                   &globalVertexIDs);
-      if (scalars.size() == 0) {
-        std::cout << "could not read scalars from "
-                  << scalarsFileName << " ... assuming we've done all ranks and are now done"
-                  << std::endl;
+      } catch (std::exception e) {
         break;
       }
       
