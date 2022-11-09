@@ -1,0 +1,116 @@
+// ======================================================================== //
+// Copyright 2018-2020 Ingo Wald                                            //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+/* information on fund3d data format provided by Pat Moran - greatly
+   indebted! All loader code rewritten from scratch. */
+
+#include "umesh/io/ugrid32.h"
+#include "umesh/io/ugrid64.h"
+#include "umesh/io/fun3dScalars.h"
+#include "umesh/RemeshHelper.h"
+
+namespace umesh {
+  
+  /*! time step to merge in - gets ignored if no scalarPath is set;
+    otherwise indiceaes which of the times steps to use; -1 means
+    'last one in file' */
+  int timeStep = -1;
+
+  /*! variable to load in */
+  std::string variable = "";
+
+  void fun3DToUMesh(int ac, char **av)
+  {
+    std::string outFileName;
+    std::string gridFileName;
+    std::string volumeDataPath;
+    std::string variable;
+    
+    for (int i=1;i<ac;i++) {
+      const std::string arg = av[i];
+      if (arg == "-o")
+        outFileName = av[++i];
+      else if (arg == "--grid")
+        gridFileName = av[++i];
+      else if (arg == "--volume-data")
+        volumeDataPath = av[++i];
+      else if (arg == "-ts" || arg == "--time-step")
+        timeStep = atoi(av[++i]);
+      else if (arg == "-var" || arg == "--variable")
+        variable = av[++i];
+      else
+        throw std::runtime_error("unknown cmdline arg '"+arg+"'");
+    }
+    if (volumeDataPath.empty())
+      throw std::runtime_error("no path to volume data specified");
+
+    if (timeStep < 0 || variable == "") {
+      std::string firstFileName = volumeDataPath+std::to_string(1);
+      std::vector<std::string> variables;
+      std::vector<int> timeSteps;
+      io::fun3d::getInfo(firstFileName,variables,timeSteps);
+      std::cout << "File Info: " << std::endl;
+      std::cout << "variables:";
+      for (auto var : variables) std::cout << " " << var;
+      std::cout << std::endl;
+      std::cout << "timeSteps:";
+      for (auto var : timeSteps) std::cout << " " << var;
+      std::cout << std::endl;
+      exit(0);
+    }
+    if (outFileName.empty())
+      throw std::runtime_error("no out file name specified");
+    if (gridFileName.empty())
+      throw std::runtime_error("no grid file name specified");
+
+    std::cout << "loading single mesh (ugrid64 format) from " << gridFileName << std::endl;
+    UMesh::SP mesh = io::UGrid64Loader::load(gridFileName);
+    mesh->perVertex = std::make_shared<Attribute>(mesh->vertices.size());
+    mesh->perVertex->name = variable;
+    std::cout << "done loading mesh, got " << mesh->toString() << std::endl;
+    size_t numVerticesRead = 0;
+    for (int rank=1;true;rank++) {
+      std::string scalarsFileName = volumeDataPath // + "volume_data."
+        +std::to_string(rank);
+      std::cout << "reading time step " << timeStep
+                << " from " << scalarsFileName << std::endl;
+      
+      std::vector<size_t> globalVertexIDs;
+      std::vector<float> scalars
+        = io::fun3d::readTimeStep(scalarsFileName,variable,timeStep,
+                                  &globalVertexIDs);
+      if (scalars.size() == 0) {
+        std::cout << "could not read scalars from "
+                  << scalarsFileName << " ... assuming we've done all ranks and are now done"
+                  << std::endl;
+        break;
+      }
+      
+      for (int i=0;i<scalars.size();i++) 
+        mesh->setScalar(globalVertexIDs[i],scalars[i]);
+      numVerticesRead += scalars.size();
+    }
+    if (numVerticesRead != mesh->vertices.size())
+      throw std::runtime_error("didn't read as many vertices as we'd expect!?");
+
+    mesh->saveTo(outFileName);
+  }
+  
+}
+
+int main(int ac, char **av)
+{ umesh::fun3DToUMesh(ac,av); return 0; }
+

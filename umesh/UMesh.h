@@ -327,6 +327,15 @@ namespace umesh {
     /*! create std::vector of all primrefs for all _surface_ elements
         (triangles and quads) */
     std::vector<PrimRef> createSurfacePrimRefs();
+
+    /*! sets given vertex's scalar field value to the value specified;
+        this will _not_ update the attributes' min/max valuerange */
+    void setScalar(size_t scalarID, float value)
+    {
+      assert(perVertex);
+      assert(scalarID < perVertex->scalars.size());
+      perVertex->values[scalarID] = value;
+    }
     
     inline size_t size() const
     {

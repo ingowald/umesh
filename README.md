@@ -126,7 +126,6 @@ Also available programmatically via `umesh::extractSurfaceSurfaceMesh(mesh)`.
 
 ## Perform Spatial Partitioning
 
-
 # Importers
 
 UMesh can load the following formats:
@@ -139,6 +138,8 @@ our own binary format
 
 the ugrid64 and ugrid32 formats used by various versions of NASA's
 fun3d library.
+
+## `fun3DToUmesh` Tool
 
 ## Nasa Fun3D Mars Lander importer
 
@@ -166,7 +167,6 @@ UMesh info:
 bounds : [(-300,-100,-100):(300,100,100)]
 values : [0:96.9123]
 ```
-
 
 ## OFF
 
