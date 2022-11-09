@@ -93,7 +93,7 @@ namespace umesh {
       std::cout << "Warning: no scalars file specified!!!" << std::endl;
     if (outFileName == "") usage("no output file specified");
     
-    std::cout << "loading off from " << ugridFileName << " + " << scalarsFileName << std::endl;
+    std::cout << "loading ugrid64 from " << ugridFileName << " + " << scalarsFileName << std::endl;
     UMesh::SP in = io::UGrid64Loader::load(ugridFileName,scalarsFileName);
     if (scalarsFileName == "")
       for (size_t i=0;i<in->vertices.size();i++)

@@ -78,6 +78,8 @@ namespace umesh {
         gridFileName = av[++i];
       else if (arg == "--volume-data")
         volumeDataPath = av[++i];
+      else if (arg == "--verbose" || arg == "-v")
+        umesh::verbose = 1;
       else if (arg == "-ts" || arg == "--time-step")
         timeStep = atoi(av[++i]);
       else if (arg == "-var" || arg == "--variable")

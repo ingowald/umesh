@@ -18,7 +18,6 @@
    indebted! All loader code rewritten from scratch. */
 
 #include "umesh/io/ugrid32.h"
-#include "umesh/io/ugrid64.h"
 #include "umesh/io/fun3dScalars.h"
 #include "umesh/RemeshHelper.h"
 
@@ -56,7 +55,8 @@ namespace umesh {
       fclose(metaFile);
     }
 
-    UMesh::SP mesh = io::UGrid32Loader::load(meshFileName);
+    UMesh::SP mesh = io::UGrid32Loader::load(io::UGrid32Loader::FLOAT,
+                                             meshFileName);
     std::cout << "loaded part mesh " << mesh->toString() << " " << mesh->getBounds() << std::endl;
 #if 1
     const std::string outFileNameMeshGhost = outFileNameBase + "." + std::to_string(rank) + "-with-ghost-cells.umesh";

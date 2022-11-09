@@ -59,6 +59,13 @@ target_link_libraries(umeshImportUGrid64
   PUBLIC
   umesh
   )
+add_executable(umeshImportUGrid32
+  importUGrid32.cpp
+  )
+target_link_libraries(umeshImportUGrid32
+  PUBLIC
+  umesh
+  )
 
 # ------------------------------------------------------------------
 # tetrahedralize a (general) umesh into a tet-only umesh, by

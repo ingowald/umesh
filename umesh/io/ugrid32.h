@@ -23,13 +23,23 @@ namespace umesh {
   namespace io {
 
     struct UGrid32Loader {
-      UGrid32Loader(const std::string &dataFileName,
+      
+      typedef enum
+        { /* try to detect automatically from file name: */
+         AUTO,
+         DOUBLE,
+         FLOAT
+        } VertexFormat;
+      
+      UGrid32Loader(const VertexFormat vertexFormat,
+                    const std::string &dataFileName,
                     const std::string &scalarFileName);
 
-      static UMesh::SP load(const std::string &dataFileName,
+      static UMesh::SP load(const VertexFormat vertexFormat,
+                            const std::string &dataFileName,
                             const std::string &scalarFileName="");
       
-      UMesh::SP result; 
+      UMesh::SP result;
     };
 
   }

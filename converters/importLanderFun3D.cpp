@@ -55,7 +55,7 @@ namespace umesh {
       if (prim[i] < 0 || isDegen(mesh->vertices[prim[i]])) return true;
     return false;
   }
-
+  
   template<typename Prim>
   inline void warnDegen(UMesh::SP mesh, Prim prim)
   {
@@ -115,7 +115,9 @@ namespace umesh {
         fclose(metaFile);
       }
 
-      UMesh::SP mesh = io::UGrid32Loader::load(meshFileName);
+      // apparently the lander we have is in FLOAT vertices
+      UMesh::SP mesh = io::UGrid32Loader::load(io::UGrid32Loader::FLOAT,
+                                               meshFileName);
       std::cout << "loaded part mesh " << mesh->toString() << " " << mesh->getBounds() << std::endl;
       std::cout << "CHECKING FOR DEGEN VERTICES IN " << mesh->toString() << std::endl;
       for (auto vtx : mesh->vertices)
