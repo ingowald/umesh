@@ -38,6 +38,9 @@ namespace umesh {
       static UMesh::SP load(const VertexFormat vertexFormat,
                             const std::string &dataFileName,
                             const std::string &scalarFileName="");
+      static UMesh::SP load(const std::string &dataFileName,
+                            const std::string &scalarFileName="")
+      { return load(AUTO,dataFileName,scalarFileName); }
       
       UMesh::SP result;
     };

@@ -40,7 +40,7 @@ namespace umesh {
     std::cout << "w/ args:" << std::endl;
     std::cout << " -ts <timestep>       : time step to use" << std::endl;
     std::cout << " -var <variableName>  : name of variable to use" << std::endl;
-    std::cout << " --grid <filename>    : name of file with the lb8 ugrid64 mesh" << std::endl;
+    std::cout << " --grid <filename>    : name of file with the ugrid32 mesh" << std::endl;
     std::cout << " --volume-data <path> : path to where the volume files are" << std::endl;
     std::cout << "" << std::endl;
     std::cout << "To print the variables and time step, specify only the volume path" << std::endl;
@@ -109,8 +109,8 @@ namespace umesh {
     if (gridFileName.empty())
       usage("no grid file name specified");
 
-    std::cout << "loading single mesh (ugrid64 format) from " << gridFileName << std::endl;
-    UMesh::SP mesh = io::UGrid64Loader::load(gridFileName);
+    std::cout << "loading single mesh (ugrid32 format) from " << gridFileName << std::endl;
+    UMesh::SP mesh = io::UGrid32Loader::load(gridFileName);
     mesh->perVertex = std::make_shared<Attribute>(mesh->vertices.size());
     mesh->perVertex->name = variable;
     std::cout << "done loading mesh, got " << mesh->toString() << std::endl;
@@ -141,6 +141,7 @@ namespace umesh {
             + " of expected " + std::to_string(mesh->vertices.size()));
     }
 
+    mesh->finalize();
     mesh->saveTo(outFileName);
   }
   
