@@ -44,6 +44,22 @@ namespace umesh {
     std::cout << " --volume-data <path> : path to where the volume files are" << std::endl;
     std::cout << "" << std::endl;
     std::cout << "To print the variables and time step, specify only the volume path" << std::endl;
+    std::cout << "" << std::endl;
+    std::cout << "Examples: " << std::endl;
+    std::cout << "" << std::endl;
+    std::cout << " ./fun3DToUmesh --volume-data /path/crmhl-40-37-wmles-mods_volume_data." << std::endl;
+    std::cout << "" << std::endl;
+    std::cout << "   -> reads the first volume brick from the given path, " << std::endl;
+    std::cout << "      and prints all varables and time steps" << std::endl;
+    std::cout << "" << std::endl;
+    std::cout << " ./fun3DToUmesh                                            \\" << std::endl;
+    std::cout << "   --volume-data /path/crmhl-40-37-wmles-mods_volume_data. \\" << std::endl;
+    std::cout << "   --grid /path/crmhl-40-37-wmles-mods.lb8.ugrid           \\" << std::endl;
+    std::cout << "   -var vort_mag -ts 133900                                \\ " << std::endl;
+    std::cout << "   -o /out-path/rajko-vort_mag-133900.umesh" << std::endl;
+    std::cout << "" << std::endl;
+    std::cout << "   -> extracts given var and time step to a umesh" << std::endl;
+      
     exit(error.empty()?0:1);
   }
   
