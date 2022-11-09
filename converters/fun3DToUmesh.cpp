@@ -134,7 +134,7 @@ namespace umesh {
         mesh->setScalar(globalVertexIDs[i],scalars[i]);
       numVerticesRead += scalars.size();
     }
-    if (numVerticesRead != mesh->vertices.size()) {
+    if (numVerticesRead < mesh->vertices.size()) {
       usage("didn't read as many vertices as we'd expect!? got " + std::to_string(numVerticesRead)
             + " of expected " + std::to_string(mesh->vertices.size()));
     }
