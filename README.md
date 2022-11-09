@@ -139,7 +139,22 @@ our own binary format
 the ugrid64 and ugrid32 formats used by various versions of NASA's
 fun3d library.
 
-## `fun3DToUmesh` Tool
+## Import from a Fun3D data set:`fun3DToUmesh` 
+
+Fun3D data can come in various ways; but apparently, the main form of
+saved fun3D data comes in the following form:
+
+- *one* "lb8" ugrid64 file for the mesh
+
+- *multiple* "volume" files (one per rank); each of these files is for
+one rank's worth of scalars, but can contain multiple variables and
+times steps.
+
+To import one variable and time step's worth of data, use the `fun3DToUMesh` tool:
+
+```
+
+```
 
 ## Nasa Fun3D Mars Lander importer
 

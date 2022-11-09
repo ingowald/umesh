@@ -32,6 +32,21 @@ namespace umesh {
   /*! variable to load in */
   std::string variable = "";
 
+  void usage(const std::string &error)
+  {
+    if (!error.empty())
+      std::cerr << "Error: " << error << std::endl << std::endl;
+    std::cout << "Usage: ./fun3DToUmesh <args>" << std::endl;
+    std::cout << "w/ args:" << std::endl;
+    std::cout << " -ts <timestep>       : time step to use" << std::endl;
+    std::cout << " -var <variableName>  : name of variable to use" << std::endl;
+    std::cout << " --grid <filename>    : name of file with the lb8 ugrid64 mesh" << std::endl;
+    std::cout << " --volume-data <path> : path to where the volume files are" << std::endl;
+    std::cout << "" << std::endl;
+    std::cout << "To print the variables and time step, specify only the volume path" << std::endl;
+    exit(error.empty()?0:1);
+  }
+  
   void fun3DToUMesh(int ac, char **av)
   {
     std::string outFileName;
@@ -52,10 +67,10 @@ namespace umesh {
       else if (arg == "-var" || arg == "--variable")
         variable = av[++i];
       else
-        throw std::runtime_error("unknown cmdline arg '"+arg+"'");
+        usage("unknown cmdline arg '"+arg+"'");
     }
     if (volumeDataPath.empty())
-      throw std::runtime_error("no path to volume data specified");
+      usage("no path to volume data specified");
 
     if (timeStep < 0 || variable == "") {
       std::string firstFileName = volumeDataPath+std::to_string(1);
@@ -72,9 +87,9 @@ namespace umesh {
       exit(0);
     }
     if (outFileName.empty())
-      throw std::runtime_error("no out file name specified");
+      usage("no out file name specified");
     if (gridFileName.empty())
-      throw std::runtime_error("no grid file name specified");
+      usage("no grid file name specified");
 
     std::cout << "loading single mesh (ugrid64 format) from " << gridFileName << std::endl;
     UMesh::SP mesh = io::UGrid64Loader::load(gridFileName);
@@ -103,8 +118,10 @@ namespace umesh {
         mesh->setScalar(globalVertexIDs[i],scalars[i]);
       numVerticesRead += scalars.size();
     }
-    if (numVerticesRead != mesh->vertices.size())
-      throw std::runtime_error("didn't read as many vertices as we'd expect!?");
+    if (numVerticesRead != mesh->vertices.size()) {
+      usage("didn't read as many vertices as we'd expect!? got " + std::to_string(numVerticesRead)
+            + " of expected " + std::to_string(mesh->vertices.size()));
+    }
 
     mesh->saveTo(outFileName);
   }
