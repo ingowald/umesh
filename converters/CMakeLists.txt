@@ -58,3 +58,21 @@ target_link_libraries(fun3DToUmesh
   )
 
 
+# ------------------------------------------------------------------
+# tool that takes a fun3D input that comes in the form of
+#
+# a) a single ".lb8" ugrid64 file for the mesh, and
+#
+# b) a set of per-rank scalar files ...
+#
+# and creates a single umesh with a single variable
+# ------------------------------------------------------------------
+add_executable(fun3DExtractVariable
+  fun3DExtractVariable.cpp
+  )
+target_link_libraries(fun3DExtractVariable
+  PUBLIC
+  umesh
+  )
+
+
