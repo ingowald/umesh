@@ -112,16 +112,18 @@ namespace umesh {
         uint32_t n_verts, n_tris, n_quads, n_tets, n_pyrs, n_prisms, n_hexes;
       } header;
 
-      std::cout << "reading ugrid32 header: "<< std::endl;
+      if (verbose) std::cout << "reading ugrid32 header: "<< std::endl;
       readElement(data,header);
-      std::cout << "  expecting" << std::endl;
-      std::cout << "  num verts  " << header.n_verts << std::endl;
-      std::cout << "  num tris   " << header.n_tris << std::endl;
-      std::cout << "  num quads  " << header.n_quads << std::endl;
-      std::cout << "  num tets   " << header.n_tets << std::endl;
-      std::cout << "  num pyrs   " << header.n_pyrs << std::endl;
-      std::cout << "  num prisms " << header.n_prisms << std::endl;
-      std::cout << "  num hexes  " << header.n_hexes << std::endl;
+      if (verbose) {
+        std::cout << "  expecting" << std::endl;
+        std::cout << "  num verts  " << header.n_verts << std::endl;
+        std::cout << "  num tris   " << header.n_tris << std::endl;
+        std::cout << "  num quads  " << header.n_quads << std::endl;
+        std::cout << "  num tets   " << header.n_tets << std::endl;
+        std::cout << "  num pyrs   " << header.n_pyrs << std::endl;
+        std::cout << "  num prisms " << header.n_prisms << std::endl;
+        std::cout << "  num hexes  " << header.n_hexes << std::endl;
+      }
       size_t numDegen = 0;
       
       result->bounds = box3f(); 

@@ -119,7 +119,6 @@ namespace umesh {
       UMesh::SP mesh = io::UGrid32Loader::load(io::UGrid32Loader::FLOAT,
                                                meshFileName);
       std::cout << "loaded part mesh " << mesh->toString() << " " << mesh->getBounds() << std::endl;
-      // std::cout << "CHECKING FOR DEGEN VERTICES IN " << mesh->toString() << std::endl;
       for (auto vtx : mesh->vertices)
         if (isDegen(vtx)) std::cout << " > DEGEN VERTEX " << vtx << std::endl;
 
@@ -141,7 +140,8 @@ namespace umesh {
         merged->perVertex->values[globalVertexIDs[i]] = scalars[i];
       }
 
-      std::cout << "merging in " << prettyNumber(mesh->triangles.size()) << " triangles" << std::endl;
+      if (verbose)
+        std::cout << "merging in " << prettyNumber(mesh->triangles.size()) << " triangles" << std::endl;
       for (int i=0;i<mesh->triangles.size();i++) {
         auto in = mesh->triangles[i];
         if (!(i % 100000)) { std::cout << "." << std::flush; };
@@ -156,6 +156,7 @@ namespace umesh {
       if (!mesh->triangles.empty()) 
         std::cout << std::endl;
 
+      if (verbose)
       std::cout << "merging in " << prettyNumber(mesh->quads.size()) << " quads" << std::endl;
       for (int i=0;i<mesh->quads.size();i++) {
         auto in = mesh->quads[i];
@@ -173,6 +174,7 @@ namespace umesh {
 
 
       // for (auto in : mesh->tets) {
+      if (verbose)
       std::cout << "merging in " << prettyNumber(meta.tets) << " out of " << prettyNumber(mesh->tets.size()) << " tets" << std::endl;
       for (int i=0;i<meta.tets;i++) {
         auto in = mesh->tets[i];
@@ -187,6 +189,7 @@ namespace umesh {
       }
       std::cout << std::endl;
 
+      if (verbose)
       std::cout << "merging in " << prettyNumber(meta.pyrs) << " out of " << prettyNumber(mesh->pyrs.size()) << " pyrs" << std::endl;
       for (int i=0;i<meta.pyrs;i++) {
         auto in = mesh->pyrs[i];
@@ -199,6 +202,7 @@ namespace umesh {
         merged->pyrs.push_back(out);
       }
       
+      if (verbose)
       std::cout << "merging in " << prettyNumber(meta.wedges) << " out of " << prettyNumber(mesh->wedges.size()) << " wedges" << std::endl;
       for (int i=0;i<meta.wedges;i++) {
         auto in = mesh->wedges[i];
@@ -211,6 +215,7 @@ namespace umesh {
         merged->wedges.push_back(out);
       }
 
+      if (verbose)
       std::cout << "merging in " << prettyNumber(meta.hexes)
                 << " out of " << prettyNumber(mesh->hexes.size())
                 << " hexes" << std::endl;
@@ -225,7 +230,7 @@ namespace umesh {
         merged->hexes.push_back(out);
       }
       
-      std::cout << " >>> done part " << fileID << ", got " << merged->toString(false) << " (note it's OK that bounds aren't set yet)" << std::endl;
+      std::cout << " >>> done part " << fileID << ", got\n" << merged->toString(false) << " (note it's OK that bounds aren't set yet)" << std::endl;
       return true;
     }
     
