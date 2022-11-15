@@ -101,7 +101,6 @@ namespace umesh {
           throw std::runtime_error("could not detect float vs double format for vertices from file name; please specify it explicitly");
       }
 
-
       if (verbose)
         std::cout << "#tetty.io: reading ugrid32 file ..." << std::endl;
       result = std::make_shared<UMesh>();

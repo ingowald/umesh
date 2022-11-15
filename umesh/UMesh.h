@@ -296,7 +296,7 @@ namespace umesh {
     {
       return tets.size()+pyrs.size()+wedges.size()+hexes.size();
     }
-    
+
     /*! print some basic info of this mesh to std::cout */
     void print();
 
@@ -354,29 +354,37 @@ namespace umesh {
     inline range1f getValueRange() const {
       if (!perVertex)
         throw std::runtime_error("cannot get value range for umesh: no attributes!");
-      range1f valueRange;
-      for (int i=0;i<tets.size();i++) 
-        valueRange.extend(getTetValueRange(i));
-      for (int i=0;i<pyrs.size();i++) 
-        valueRange.extend(getPyrValueRange(i));
-      for (int i=0;i<wedges.size();i++) 
-        valueRange.extend(getWedgeValueRange(i));
-      for (int i=0;i<hexes.size();i++) 
-        valueRange.extend(getHexValueRange(i));
-      return valueRange;
+      if (perVertex->valueRange.empty() && !perVertex->values.empty()) {
+        throw std::runtime_error("invalid per-vertex value range field - did you forget some finalize() somewhere?");
+      }
+      
+      // if (perVertex->valueRange.empty()) {
+      //   for (int i=0;i<tets.size();i++) 
+      //     perVertex->valueRange.extend(getTetValueRange(i));
+      //   for (int i=0;i<pyrs.size();i++) 
+      //     perVertex->valueRange.extend(getPyrValueRange(i));
+      //   for (int i=0;i<wedges.size();i++) 
+      //     perVertex->valueRange.extend(getWedgeValueRange(i));
+      //   for (int i=0;i<hexes.size();i++) 
+      //     perVertex->valueRange.extend(getHexValueRange(i));
+      // }
+      return perVertex->valueRange;
     }
     
     inline box3f getBounds() const
     {
-      box3f bounds;
-      for (int i=0;i<tets.size();i++)
-        bounds.extend(getTetBounds(i));
-      for (int i=0;i<pyrs.size();i++)
-        bounds.extend(getPyrBounds(i));
-      for (int i=0;i<wedges.size();i++)
-        bounds.extend(getWedgeBounds(i));
-      for (int i=0;i<hexes.size();i++)
-        bounds.extend(getHexBounds(i));
+      if (bounds.empty())
+        throw std::runtime_error("invalid mesh bounds value - did you forget some finalize() somewhere?");
+      // if (this->bounds.empty()) {
+      //   for (int i=0;i<tets.size();i++)
+      //     bounds.extend(getTetBounds(i));
+      //   for (int i=0;i<pyrs.size();i++)
+      //     bounds.extend(getPyrBounds(i));
+      //   for (int i=0;i<wedges.size();i++)
+      //     bounds.extend(getWedgeBounds(i));
+      //   for (int i=0;i<hexes.size();i++)
+      //     bounds.extend(getHexBounds(i));
+      // }
       return bounds;
     }
 
@@ -384,7 +392,6 @@ namespace umesh {
     {
       box3f bounds = getBounds();
       range1f valueRange = getValueRange();
-      
       return {vec4f(bounds.lower,valueRange.lower),vec4f(bounds.upper,valueRange.upper)};
     }
     

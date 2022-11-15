@@ -77,6 +77,7 @@ namespace umesh {
     range1f including(const float f) const;
     void extend(float f);
     void extend(const range1f &other);
+    inline bool empty() const { return upper < lower; }
     float lower = +FLT_MAX, upper = -FLT_MAX;
   };
   

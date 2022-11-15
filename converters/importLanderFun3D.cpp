@@ -75,8 +75,8 @@ namespace umesh {
 
     void loadScalars(UMesh::SP mesh, int fileID,
                      /*! where each one of the given "volume_data" and
-                         "mesh" files' vertices are supposed to go in
-                         the global, reconstituted file */
+                       "mesh" files' vertices are supposed to go in
+                       the global, reconstituted file */
                      std::vector<size_t> &globalVertexIDs)
     {
       if (scalarsPath == "")
@@ -157,7 +157,7 @@ namespace umesh {
         std::cout << std::endl;
 
       if (verbose)
-      std::cout << "merging in " << prettyNumber(mesh->quads.size()) << " quads" << std::endl;
+        std::cout << "merging in " << prettyNumber(mesh->quads.size()) << " quads" << std::endl;
       for (int i=0;i<mesh->quads.size();i++) {
         auto in = mesh->quads[i];
         if (!(i % 100000)) { std::cout << "." << std::flush; };
@@ -175,7 +175,7 @@ namespace umesh {
 
       // for (auto in : mesh->tets) {
       if (verbose)
-      std::cout << "merging in " << prettyNumber(meta.tets) << " out of " << prettyNumber(mesh->tets.size()) << " tets" << std::endl;
+        std::cout << "merging in " << prettyNumber(meta.tets) << " out of " << prettyNumber(mesh->tets.size()) << " tets" << std::endl;
       for (int i=0;i<meta.tets;i++) {
         auto in = mesh->tets[i];
         if (!(i % 100000)) { std::cout << "." << std::flush; };
@@ -190,7 +190,7 @@ namespace umesh {
       std::cout << std::endl;
 
       if (verbose)
-      std::cout << "merging in " << prettyNumber(meta.pyrs) << " out of " << prettyNumber(mesh->pyrs.size()) << " pyrs" << std::endl;
+        std::cout << "merging in " << prettyNumber(meta.pyrs) << " out of " << prettyNumber(mesh->pyrs.size()) << " pyrs" << std::endl;
       for (int i=0;i<meta.pyrs;i++) {
         auto in = mesh->pyrs[i];
         UMesh::Pyr out;
@@ -203,7 +203,7 @@ namespace umesh {
       }
       
       if (verbose)
-      std::cout << "merging in " << prettyNumber(meta.wedges) << " out of " << prettyNumber(mesh->wedges.size()) << " wedges" << std::endl;
+        std::cout << "merging in " << prettyNumber(meta.wedges) << " out of " << prettyNumber(mesh->wedges.size()) << " wedges" << std::endl;
       for (int i=0;i<meta.wedges;i++) {
         auto in = mesh->wedges[i];
         UMesh::Wedge out;
@@ -216,9 +216,9 @@ namespace umesh {
       }
 
       if (verbose)
-      std::cout << "merging in " << prettyNumber(meta.hexes)
-                << " out of " << prettyNumber(mesh->hexes.size())
-                << " hexes" << std::endl;
+        std::cout << "merging in " << prettyNumber(meta.hexes)
+                  << " out of " << prettyNumber(mesh->hexes.size())
+                  << " hexes" << std::endl;
       for (int i=0;i<meta.hexes;i++) {
         auto in = mesh->hexes[i];
         UMesh::Hex out;
@@ -229,7 +229,8 @@ namespace umesh {
         }
         merged->hexes.push_back(out);
       }
-      
+
+      merged->finalize();
       std::cout << " >>> done part " << fileID << ", got\n" << merged->toString(false) << " (note it's OK that bounds aren't set yet)" << std::endl;
       return true;
     }
@@ -290,6 +291,8 @@ namespace umesh {
         num = atoi(av[++i]);
       else if (arg == "--first")
         begin = atoi(av[++i]);
+      else if (arg == "-v" || arg == "--verbose")
+        umesh::verbose = 1;
       else if (arg == "-s" || arg == "--scalars")
         scalarsPath = av[++i];
       else if (arg == "-ts" || arg == "--time-step")

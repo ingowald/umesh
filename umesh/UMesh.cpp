@@ -90,6 +90,10 @@ namespace umesh {
   /*! write - binary - to given file */
   void UMesh::saveTo(const std::string &fileName) const
   {
+    if (size() > 0 && bounds.empty()) {
+      throw std::runtime_error("invalid mesh bounds value when saving umesh - did you forget some finalize() somewhere?");
+    }
+
     std::ofstream out(fileName, std::ios_base::binary);
     writeTo(out);
   }
@@ -149,6 +153,7 @@ namespace umesh {
     if (!in.good())
       throw std::runtime_error("#umesh: could not open '"+fileName+"'");
     mesh->readFrom(in);
+    mesh->finalize();
     return mesh;
   }
   
