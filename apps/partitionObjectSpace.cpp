@@ -159,19 +159,19 @@ namespace umesh {
     }
 
     char ext[20];
-    std::vector<box3f> brickBounds;
+    // std::vector<box3f> brickBounds;
     for (int brickID=0;!bricks.empty();brickID++) {
       Brick *brick = bricks.top().second;
       bricks.pop();
       sprintf(ext,"_%05d",brickID);
       writeBrick(in,outFileBase+ext,brick);
-      brickBounds.push_back(brick->bounds);
+      // brickBounds.push_back(brick->bounds);
       delete brick;
     }
 
-    std::ofstream boundsFile(outFileBase+".bounds",std::ios::binary);
-    io::writeVector(boundsFile,brickBounds);
-    std::cout << "done wirting bounds... done all" << std::endl;
+    // std::ofstream boundsFile(outFileBase+".bounds",std::ios::binary);
+    // io::writeVector(boundsFile,brickBounds);
+    // std::cout << "done wirting bounds... done all" << std::endl;
   }
   
 } // ::umesh
