@@ -311,7 +311,6 @@ namespace umesh {
     /*! read from given (binary) stream */
     void readFrom(std::istream &in);
     
-    
     /*! create std::vector of primitmive references (bounding box plus
       tag) for every volumetric prim in this mesh */
     void createVolumePrimRefs(std::vector<PrimRef> &result);
@@ -319,6 +318,10 @@ namespace umesh {
     /*! create std::vector of primitmive references (bounding box plus
       tag) for every volumetric prim in this mesh */
     std::vector<PrimRef> createVolumePrimRefs();
+
+    /*! create std::vector of ALL primitmive references, includign
+        both volume and surface ones */
+    std::vector<PrimRef> createAllPrimRefs();
 
     /*! create std::vector of all primrefs for all _surface_ elements
         (triangles and quads) */

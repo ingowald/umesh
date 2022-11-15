@@ -85,7 +85,7 @@ namespace umesh {
                           UMesh::SP in)
   {
     Brick *brick = new Brick;
-    in->createVolumePrimRefs(brick->prims);
+    brick->prims = in->createAllPrimRefs();
     for (auto prim : brick->prims) {
       const box3f pb = in->getBounds(prim);
       brick->bounds.extend(pb);

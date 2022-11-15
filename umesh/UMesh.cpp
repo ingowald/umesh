@@ -260,6 +260,16 @@ namespace umesh {
        });
   }
   
+  /*! create std::vector of ALL primitmive references, includign
+    both volume and surface ones */
+  std::vector<UMesh::PrimRef> UMesh::createAllPrimRefs()
+  {
+    std::vector<PrimRef> allPRs = createVolumePrimRefs();
+    for (auto prim : createSurfacePrimRefs())
+      allPRs.push_back(prim);
+    return allPRs;
+  }
+
   /*! print some basic info of this mesh to std::cout */
   void UMesh::print()
   {
