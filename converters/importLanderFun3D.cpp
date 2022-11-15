@@ -119,7 +119,7 @@ namespace umesh {
       UMesh::SP mesh = io::UGrid32Loader::load(io::UGrid32Loader::FLOAT,
                                                meshFileName);
       std::cout << "loaded part mesh " << mesh->toString() << " " << mesh->getBounds() << std::endl;
-      std::cout << "CHECKING FOR DEGEN VERTICES IN " << mesh->toString() << std::endl;
+      // std::cout << "CHECKING FOR DEGEN VERTICES IN " << mesh->toString() << std::endl;
       for (auto vtx : mesh->vertices)
         if (isDegen(vtx)) std::cout << " > DEGEN VERTEX " << vtx << std::endl;
 

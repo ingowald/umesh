@@ -29,29 +29,22 @@ namespace umesh {
           uint32_t magicNumber = io::readElement<uint32_t>(in);
 
           std::string versionString = io::readString(in);
-     //     std::cout << "Found fun3d file with version string "
-      //              << versionString << std::endl;
       
           uint32_t ignore = io::readElement<uint32_t>(in);
           numScalars = io::readElement<uint32_t>(in);
           
           variableNames.resize(io::readElement<uint32_t>(in));
-          for (auto &var : variableNames) {
+          for (auto &var : variableNames) 
             var = io::readString(in);
-       //     std::cout << "Found variable '" << var << "'" << std::endl;
-          }
 
           globalVertexIDs.resize(numScalars);
           io::readArray(in,globalVertexIDs.data(),globalVertexIDs.size());
-          // std::cout << "found num vertices " << globalVertexIDs.size() << std::endl;
-          // std::cout << "found num vars " << variableNames.size() << std::endl;
 
           size_t dataBegin = in.tellg();
           for (int tsNo=0;;tsNo++) {
             try {
               uint32_t timeStepID = io::readElement<uint32_t>(in);
               timeStepOffsets[timeStepID] = in.tellg();
-              // std::cout << "time step " << timeStepID << " at ofs " << timeStepOffsets[timeStepID] << std::endl;
               in.seekg(dataBegin
                        +tsNo*(variableNames.size()*globalVertexIDs.size()*sizeof(float)
                               +sizeof(timeStepID)),
@@ -72,7 +65,8 @@ namespace umesh {
           /* offsets based on _blocks_ of time steps (one per variable) */
           auto it = timeStepOffsets.find(desiredTimeStep);
           if (it == timeStepOffsets.end())
-            throw std::runtime_error("could not find requested time step #"+std::to_string(desiredTimeStep)+"!");
+            throw std::runtime_error("could not find requested time step #"
+                                     +std::to_string(desiredTimeStep)+"!");
           size_t offset = it->second;
 
           /* offsets based on which variable */
@@ -84,20 +78,12 @@ namespace umesh {
               break;
           }
           std::vector<float> timeStepForAllVariables(scalars.size()*variableNames.size());
-          std::cout << "seeking " << offset << std::endl;
           in.seekg(offset,std::ios::beg);
           io::readArray(in,timeStepForAllVariables.data(),timeStepForAllVariables.size());
-          std::cout << "read array " << std::endl;
-          // for (int i=0;i<20;i++) std::cout << " " << timeStepForAllVariables[i];
-          // std::cout << std::endl;
           
           for (int i=0;i<scalars.size();i++) {
             scalars[i] = timeStepForAllVariables[varID+i*variableNames.size()];
-            // if (i < 20) std::cout << " / " << scalars[i];
-            // if (scalars[i] > 1e10f)
-            //   std::cout << "BIG " << i << " = " << scalars[i] << std::endl;
           }
-          // std::cout <<std::endl;
         }
 
         size_t numScalars;
