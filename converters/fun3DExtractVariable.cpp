@@ -122,7 +122,7 @@ namespace umesh {
     
     std::cout << "loading umesh from " << umeshFileName << std::endl;
     UMesh::SP mesh = UMesh::loadFrom(umeshFileName);
-    if (mesh->vertexTag.empty())
+    if (mesh->vertexTags.empty())
       throw std::runtime_error("the umesh file specified doesn't have any vertex tags associated ... you sure that's from a partitioned mesh!?");
     
     mesh->perVertex = std::make_shared<Attribute>(mesh->vertices.size());
@@ -130,8 +130,8 @@ namespace umesh {
     std::cout << "done loading mesh, got " << mesh->toString() << std::endl;
     
     std::map<size_t,size_t> requestedVertices;
-    for (size_t i=0;i<mesh->vertexTag.size();i++)
-      requestedVertices[mesh->vertexTag[i]] = i;
+    for (size_t i=0;i<mesh->vertexTags.size();i++)
+      requestedVertices[mesh->vertexTags[i]] = i;
 
     range1f totalValueRange;
     std::ofstream scalarsFile(outFileName+"."+variable+".scalars",std::ios::binary);

@@ -107,7 +107,7 @@ namespace umesh {
                                            scalarsFileName);
     if (scalarsFileName == "")
       for (size_t i=0;i<in->vertices.size();i++)
-        in->vertexTag.push_back(i);
+        in->vertexTags.push_back(i);
     std::cout << "done loading, found " << in->toString() << std::endl;
     
     in->saveTo(outFileName);
