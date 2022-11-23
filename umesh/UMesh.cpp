@@ -84,7 +84,7 @@ namespace umesh {
     io::writeVector(out,pyrs);
     io::writeVector(out,wedges);
     io::writeVector(out,hexes);
-    io::writeVector(out,vertexTag);
+    io::writeVector(out,vertexTags);
   }
   
   /*! write - binary - to given file */
@@ -137,7 +137,7 @@ namespace umesh {
     // try {
     if (!in.eof())
       try {
-        io::readVector(in,this->vertexTag,"vertexTags");
+        io::readVector(in,this->vertexTags,"vertexTags");
       } catch (...) {
         /* ignore ... */
       }
@@ -306,6 +306,11 @@ namespace umesh {
       } else {
         ss << ",scalars=no";
       }
+      if (!vertexTags.empty()) {
+        ss << ",tags=yes";
+      } else {
+        ss << ",tags=no";
+      }
       ss << ")";
     } else {
       ss << "#verts : " << prettyNumber(vertices.size()) << std::endl;
@@ -325,6 +330,7 @@ namespace umesh {
           ss << "values : " << valueRange << std::endl;
       } else
         ss << "values : <none>" << std::endl;
+      ss << "tags : " << (vertexTags.empty()?"no":"yes") << std::endl;
     }
     return ss.str();
   }

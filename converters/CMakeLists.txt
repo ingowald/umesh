@@ -61,7 +61,8 @@ target_link_libraries(fun3DToUmesh
 # ------------------------------------------------------------------
 # tool that takes a fun3D input that comes in the form of
 #
-# a) a single ".lb8" ugrid64 file for the mesh, and
+# a) a single ".umesh" file for the mesh, typically one of the
+#    per rank .umesh files that resulted from running a partitioner
 #
 # b) a set of per-rank scalar files ...
 #

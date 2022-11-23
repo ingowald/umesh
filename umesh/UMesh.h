@@ -558,7 +558,7 @@ namespace umesh {
 
     /*! in some cases, it makes sense to allow for storing a
       user-provided per-vertex tag (may be empty) */
-    std::vector<size_t> vertexTag;
+    std::vector<size_t> vertexTags;
     
     box3f   bounds;
   };

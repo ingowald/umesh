@@ -21,8 +21,9 @@
 
 namespace umesh {
 
-  RemeshHelper::RemeshHelper(UMesh &target)
-    : target(target)
+  RemeshHelper::RemeshHelper(UMesh &target,
+                             bool createVertexTags)
+    : target(target), createVertexTags(createVertexTags)
   {}
 
   /*! given a vertex v, return its ID in the target mesh's vertex
@@ -39,7 +40,7 @@ namespace umesh {
     }
     int ID = (int)target.vertices.size();
     knownVertices[v] = ID;
-    target.vertexTag.push_back(tag);
+    target.vertexTags.push_back(tag);
     target.vertices.push_back(v);
     return ID;
   }
@@ -82,6 +83,28 @@ namespace umesh {
     return ID;
   }
 
+  /*! given a vertex v, associated per-vertex scalar value s, and a
+    _pre-existing_ vertex tag, check if this vertex was already added,
+    and return its vertex ID if so; else add with existing scalar and
+    tag. */
+  uint32_t RemeshHelper::getID(const vec3f &v,
+                               float scalar,
+                               size_t existingVertexTag)
+  {
+    auto it = knownVertices.find(v);
+    if (it != knownVertices.end()) {
+      return it->second;
+    }
+    int ID = (int)target.vertices.size();
+    knownVertices[v] = ID;
+    if (!target.perVertex)
+      target.perVertex = std::make_shared<Attribute>();
+    target.perVertex->values.push_back(scalar);
+    target.vertices.push_back(v);
+    target.vertexTags.push_back(existingVertexTag);
+    return ID;
+  }
+
   /*! given a vertex ID in another mesh, return an ID for the
    *output* mesh that corresponds to this vertex (add to output
    if not already present) */
@@ -91,18 +114,44 @@ namespace umesh {
     assert(otherMesh);
     assert(in >= 0);
     assert(in < otherMesh->vertices.size());
-    if (otherMesh->perVertex) {
-      return getID(otherMesh->vertices[in],
-                   otherMesh->perVertex->values[in]);
-    } else if (!otherMesh->vertexTag.empty()) {
-      return getID(otherMesh->vertices[in],
-                   otherMesh->vertexTag[in]);
+    vec3f v = otherMesh->vertices[in];
+    if (otherMesh->vertexTags.empty()) {
+      if (otherMesh->perVertex) {
+        // other mesh does not have vertex tags, but DOES have scalars
+        if (createVertexTags)
+          return getID(v,otherMesh->perVertex->values[in],(size_t)in);
+        else
+          return getID(v,otherMesh->perVertex->values[in]);
+      } else {
+        // other mesh has neither vertex tags not scalars
+        if (createVertexTags)
+          return getID(v,(size_t)in);
+        else
+          return getID(v);
+      }
     } else {
-      if (target.perVertex)
-        throw std::runtime_error("can't translate a vertex from another mesh that has neither scalars not vertex tags");
+      // otehr mesh DOES have vertex tags... we definitively will pass
+      // this on, no matter what current vertex ID is nor whether user
+      // did or did not request tags.
+      size_t tag = otherMesh->vertexTags[in];
+      if (otherMesh->perVertex) 
+        return getID(v,otherMesh->perVertex->values[in],tag);
       else
-        return getID(otherMesh->vertices[in]);
+        return getID(v,tag);
     }
+    // if (otherMesh->perVertex) {
+    //   return getID(otherMesh->vertices[in],
+    //                otherMesh->perVertex->values[in]);
+    // } else if (!otherMesh->vertexTags.empty()) {
+    //   return getID(otherMesh->vertices[in],
+    //                otherMesh->vertexTags[in]);
+    // // } else if (target.perVertex)
+    // //   throw std::runtime_error("can't translate a vertex from another mesh that has neither scalars not vertex tags");
+    // } else if (createVertexTags) {
+    //   return getID(otherMesh->vertices[in], (size_t)in);
+    // } else {
+    //   return getID(otherMesh->vertices[in]);
+    // }
   }
   
   void RemeshHelper::translate(uint32_t *indices, int N,
@@ -349,6 +398,8 @@ namespace umesh {
         mesh->vertices[curID] = mesh->vertices[i];
         if (mesh->perVertex)
           mesh->perVertex->values[curID] = mesh->perVertex->values[i];
+        if (!mesh->vertexTags.empty())
+          mesh->vertexTags[curID] = mesh->vertexTags[i];
         newID[i] = curID++;
       } else {
         // won't get used, anyway....
@@ -358,6 +409,8 @@ namespace umesh {
     std::cout << "done compacting vertex array, num vertices found " << curID << std::endl;
     mesh->vertices.resize(curID);
     mesh->perVertex->values.resize(curID);
+    if (!mesh->vertexTags.empty())
+      mesh->vertexTags.resize(curID);
 
     
     for (auto &prim : mesh->triangles) {

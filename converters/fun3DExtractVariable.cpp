@@ -40,7 +40,7 @@ namespace umesh {
     std::cout << "w/ args:" << std::endl;
     std::cout << " -ts <timestep>       : time step to use" << std::endl;
     std::cout << " -var <variableName>  : name of variable to use" << std::endl;
-    std::cout << " --grid <filename>    : name of file with the ugrid32 mesh" << std::endl;
+    std::cout << " --umesh <filename>   : name of the (typically per-rank) umesh file for which the variable needs to get extracted" << std::endl;
     std::cout << " --volume-data <path> : path to where the volume files are" << std::endl;
     std::cout << "" << std::endl;
     std::cout << "To print the variables and time step, specify only the volume path" << std::endl;

@@ -24,7 +24,10 @@ namespace umesh {
     the duplicates and translating the input meshes' vertices to the
     new mesh's vertex indices */
   struct RemeshHelper {
-    RemeshHelper(UMesh &target);
+    RemeshHelper(UMesh &target,
+                 /*! if on, we will create a 'vertexTag' array in the
+                     output even if it does not exist yet */
+                 bool createVertexTags = 0);
 
     /*! find ID of given vertex in target mesh (if it already exists),a
       nd return it; otherwise add vertex to target mesh, and return
@@ -39,6 +42,14 @@ namespace umesh {
       functoin of the one that uses a float scalar, not mixed */
     uint32_t getID(const vec3f &v, size_t tag);
 
+    /*! given a vertex v, associated per-vertex scalar value s, and a
+      _pre-existing_ vertex tag, check if this vertex was already
+      added, and return its vertex ID if so; else add with existing
+      scalar and tag. */
+    uint32_t getID(const vec3f &v,
+                   float scalar,
+                   size_t existingVertexTag);
+    
     /*! given a vertex v and associated per-vertex scalar value s,
       return its ID in the target mesh's vertex array (if present), or
       add it (if not). To afterwards allow the using libnray to look
@@ -69,6 +80,7 @@ namespace umesh {
     std::map<vec3f,uint32_t> knownVertices;
     
     UMesh &target;
+    const bool createVertexTags;
     // std::vector<size_t> vertexTag;
   };
   
