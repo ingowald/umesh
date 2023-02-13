@@ -336,7 +336,7 @@ namespace umesh {
     void setScalar(size_t scalarID, float value)
     {
       assert(perVertex);
-      assert(scalarID < perVertex->scalars.size());
+      assert(scalarID < perVertex->values.size());
       perVertex->values[scalarID] = value;
     }
     
