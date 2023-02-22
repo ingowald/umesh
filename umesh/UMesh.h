@@ -117,11 +117,11 @@ namespace umesh {
 
     /*! array operator, assuming VTK ordering (see windingOrder.png
       file for illustration) */
-    inline const int &operator[](int i) const {
+    inline __umesh_device const int &operator[](int i) const {
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
-    inline int &operator[](int i){
+    inline __umesh_device int &operator[](int i){
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
@@ -143,11 +143,11 @@ namespace umesh {
     
     /*! array operator, assuming VTK ordering (see windingOrder.png
       file for illustration) */
-    inline const int &operator[](int i) const {
+    inline __umesh_device const int &operator[](int i) const {
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
-    inline int &operator[](int i){
+    inline __umesh_device int &operator[](int i){
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
@@ -169,11 +169,11 @@ namespace umesh {
     
     /*! array operator, assuming VTK ordering (see windingOrder.png
       file for illustration) */
-    inline const int &operator[](int i) const {
+    inline __umesh_device const int &operator[](int i) const {
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
-    inline int &operator[](int i){
+    inline __umesh_device int &operator[](int i){
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
@@ -190,11 +190,11 @@ namespace umesh {
       
     /*! array operator, assuming VTK ordering (see windingOrder.png
       file for illustration) */
-    inline const int &operator[](int i) const {
+    inline __umesh_device const int &operator[](int i) const {
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
-    inline int &operator[](int i){
+    inline __umesh_device int &operator[](int i){
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
@@ -216,11 +216,11 @@ namespace umesh {
     {}
     /*! array operator, assuming VTK ordering (see windingOrder.png
       file for illustration) */
-    inline const int &operator[](int i) const {
+    inline __umesh_device const int &operator[](int i) const {
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
-    inline int &operator[](int i){
+    inline __umesh_device int &operator[](int i){
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }  
@@ -241,11 +241,11 @@ namespace umesh {
     {}
     /*! array operator, assuming VTK ordering (see windingOrder.png
       file for illustration) */
-    inline const int &operator[](int i) const {
+    inline __umesh_device const int &operator[](int i) const {
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
-    inline int &operator[](int i){
+    inline __umesh_device int &operator[](int i){
       assert(i>=0 && i<numVertices);
       return ((int*)this)[i];
     }
