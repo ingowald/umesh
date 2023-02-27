@@ -1086,6 +1086,7 @@ namespace umesh {
       tmp->vertices = output->vertices;
       tmp->perVertex = output->perVertex;
       tmp->hexes = output->hexes;
+      tmp->finalize();
       tmp->saveTo(outFileName+"_hexes.umesh");
     }
 #endif
@@ -1096,6 +1097,7 @@ namespace umesh {
       tmp->vertices = output->vertices;
       tmp->perVertex = output->perVertex;
       tmp->pyrs = output->pyrs;
+      tmp->finalize();
       tmp->saveTo(outFileName+"_pyrs.umesh");
     }
 #endif
@@ -1106,6 +1108,7 @@ namespace umesh {
       tmp->vertices = output->vertices;
       tmp->perVertex = output->perVertex;
       tmp->wedges = output->wedges;
+      tmp->finalize();
       tmp->saveTo(outFileName+"_wedges.umesh");
     }
 #endif
@@ -1116,6 +1119,7 @@ namespace umesh {
       tmp->vertices = output->vertices;
       tmp->perVertex = output->perVertex;
       tmp->tets = output->tets;
+      tmp->finalize();
       tmp->saveTo(outFileName+"_tets.umesh");
     }
 #endif
