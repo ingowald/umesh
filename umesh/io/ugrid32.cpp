@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "ugrid32.h"
+#include <cstring>
 #include <fstream>
 
 #ifndef PRINT
