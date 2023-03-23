@@ -77,7 +77,7 @@ namespace umesh {
                      /*! where each one of the given "volume_data" and
                        "mesh" files' vertices are supposed to go in
                        the global, reconstituted file */
-                     std::vector<size_t> &globalVertexIDs)
+                     std::vector<uint64_t> &globalVertexIDs)
     {
       if (scalarsPath == "")
         return;
@@ -256,7 +256,7 @@ namespace umesh {
     }
     
     UMesh::SP merged;
-    std::vector<size_t> globalVertexIDs;
+    std::vector<uint64_t> globalVertexIDs;
     /*! desired time step's scalars for current brick, if provided */
     std::vector<float> scalars;
   };

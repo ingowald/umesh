@@ -121,7 +121,7 @@ namespace umesh {
       std::cout << "reading time step " << timeStep
                 << " from " << scalarsFileName << std::endl;
 
-      std::vector<size_t> globalVertexIDs;
+      std::vector<uint64_t> globalVertexIDs;
       std::vector<float> scalars;
       try {
         scalars = io::fun3d::readTimeStep(scalarsFileName,variable,timeStep,

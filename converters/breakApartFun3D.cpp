@@ -89,7 +89,7 @@ namespace umesh {
         std::cout << "reading time step " << ts
                   << " from " << scalarsFileName << std::endl;
           
-        std::vector<size_t> globalVertexIDs;
+        std::vector<uint64_t> globalVertexIDs;
         /*! desired time step's scalars for current brick, if provided */
         std::vector<float> scalars
           = io::fun3d::readTimeStep(scalarsFileName,var,ts,

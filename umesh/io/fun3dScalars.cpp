@@ -89,7 +89,7 @@ namespace umesh {
         size_t numScalars;
         std::ifstream in;
         std::vector<std::string> variableNames;
-        std::vector<size_t>      globalVertexIDs;
+        std::vector<uint64_t>    globalVertexIDs;
         /*! .first is time step ID, .second is the offset in the file */
         std::map<int,size_t>  timeStepOffsets;
         size_t sizeOfTimeStep;
