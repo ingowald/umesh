@@ -31,7 +31,11 @@ if (UMESH_USE_TBB)
     set(UMESH_HAVE_TBB ON)
 
     message(STATUS "linking umesh to  ${TBB_LIBRARIES}")
-    target_link_libraries(umesh PUBLIC TBB::tbb)
+    if (TARGET TBB::tbb)
+      target_link_libraries(umesh PUBLIC TBB::tbb)
+    else()
+      target_link_libraries(umesh PUBLIC tbb)
+    endif()
     target_include_directories(umesh PUBLIC
       ${PROJECT_SOURCE_DIR}
       )
