@@ -18,6 +18,9 @@
 # common settings across entire project
 # -----------------------------------------------------------------
 add_library(umesh)
+target_include_directories(umesh PUBLIC
+  ${PROJECT_SOURCE_DIR}
+  )
 
 if (WIN32)
   OPTION(UMESH_USE_TBB "Use TBB to parallelize host-side code?" OFF)
@@ -48,14 +51,14 @@ endif()
 
 # try to find CUDA; if we can't find it we'll simply disable all the
 # tools that need it
-if (UMESH_USE_CUDA)
-  find_package(CUDA)
-  if (CUDA_FOUND)
-    CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
-    LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
-    #message("selected cuda arch flags '${ARCH_FLAGS}'")
-  endif()
-endif()
+#if (UMESH_USE_CUDA)
+#  find_package(CUDA)
+#  if (CUDA_FOUND)
+#    CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
+#    LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+#    #message("selected cuda arch flags '${ARCH_FLAGS}'")
+#  endif()
+#endif()
 
 
 # ------------------------------------------------------------------
@@ -121,9 +124,6 @@ target_sources(umesh PRIVATE
 #  umesh_common
 #  )
 
-target_include_directories(umesh PUBLIC
-  ${PROJECT_SOURCE_DIR}
-  )
 
 
 
