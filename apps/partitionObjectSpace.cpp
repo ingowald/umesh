@@ -35,7 +35,8 @@ namespace umesh {
     std::cout << "./umeshPartitionObjectSpace <in.umesh> <args>" << std::endl;
     std::cout << "w/ Args: " << std::endl;
     std::cout << "-o <baseName>\n\tbase path for all output files (there will be multiple)" << std::endl;
-    std::cout << "-n|-mb|--max-bricks <N>\n\tmax number of bricks to create" << std::endl;
+    std::cout << "-n|-num-bricks <N>\n\tnumber of bricks to create" << std::endl;
+    std::cout << "--max-bricks <N>\n\tmax number of bricks to create, for given -lt" << std::endl;
     std::cout << "-lt|--leaf-threshold <N>\n\tnum prims at which we make a leaf" << std::endl;
     std::cout << std::endl;
     std::cout << "generated files are:" << std::endl;
@@ -103,6 +104,7 @@ namespace umesh {
     RemeshHelper indexer(*out);
     for (auto prim : brick->prims) 
       indexer.add(in,prim);
+    out->finalize();
     const std::string fileName = fileBase+".umesh";
     std::cout << "saving out " << fileName
               << " w/ " << prettyNumber(out->size()) << " prims" << std::endl;
@@ -123,8 +125,11 @@ namespace umesh {
       else if (arg == "-lt" || arg == "--leaf-threshold")
         leafThreshold = atoi(av[++i]);
       else if (arg == "-mb" || arg == "--max-bricks")
-        leafThreshold = atoi(av[++i]);
-      else if (arg[0] != '-')
+        maxBricks = atoi(av[++i]);
+      else if (arg == "-n" || arg == "--num-bricks") {
+        maxBricks = atoi(av[++i]);
+        leafThreshold = 1;
+      } else if (arg[0] != '-')
         inFileName = arg;
       else
         usage("unknown arg "+arg);
