@@ -210,3 +210,10 @@ target_link_libraries(exaTestCases
   PUBLIC
   umesh
   )
+
+# ------------------------------------------------------------------
+# convert umesh to vtu
+# ------------------------------------------------------------------
+if (UMESH_USE_VTK)
+  add_subdirectory(toVTU)
+endif()
