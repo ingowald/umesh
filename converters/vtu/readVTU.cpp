@@ -54,7 +54,7 @@ void readFile(const std::string fileName)
   std::cout << " - found " << numCells << " cells" << std::endl;
   for (int cellID=0;cellID<numCells;cellID++) {
     vtkIdType cellPoints;
-    vtkIdType *pointIDs;
+    const vtkIdType *pointIDs;
     grid->GetCellPoints(cellID,cellPoints,pointIDs);
 
     if (cellPoints == 8) {
