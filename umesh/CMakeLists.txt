@@ -49,7 +49,7 @@ if (UMESH_USE_TBB)
     set(UMESH_HAVE_TBB OFF)
   endif()
 else()
-  set(OWL_HAVE_TBB OFF)
+  set(UMESH_HAVE_TBB OFF)
 endif()
 
 
