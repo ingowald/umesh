@@ -29,25 +29,58 @@ else()
 endif()
 
 if (UMESH_USE_TBB)
-  find_package(TBB)
-  if (TBB_FOUND)
-    set(UMESH_HAVE_TBB ON)
 
-    message(STATUS "linking umesh to  ${TBB_LIBRARIES}")
-    if (TARGET TBB::tbb)
-      target_link_libraries(umesh PUBLIC TBB::tbb)
-    else()
-      target_link_libraries(umesh PUBLIC tbb)
-    endif()
-    target_include_directories(umesh PUBLIC
-      ${PROJECT_SOURCE_DIR}
-      )
-    target_compile_definitions(umesh PUBLIC -DUMESH_HAVE_TBB=1)
+  #
+  # first try find_package in CONFIG mode, it will be catched by OneTBB
+  # if OneTBB is not avaible, then use the old macro
+  #
+  find_package(TBB CONFIG)
+  if (NOT TBB_FOUND)
+    find_package(TBB)
+  endif()
+  
+  if (TBB_FOUND)
+    #    include_directories(${TBB_INCLUDE_DIR})
+    #    set(OWL_CXX_FLAGS "${OWL_CXX_FLAGS} -DOWL_HAVE_TBB=1")
+    message(STATUS "#umesh: found TBB, with TBB_INCLUDE_DIR=${TBB_INCLUDE_DIR}")
+    set(UMESH_HAVE_TBB ON)
   else()
+    message(STATUS "#umesh: TBB not found; falling back to serial execution of umesh::parallel_for")
     set(UMESH_HAVE_TBB OFF)
-    message("#umesh.cmake: TBB not found; falling back to serial execution of umesh::parallel_for")
+  endif()
+else()
+  set(OWL_HAVE_TBB OFF)
+endif()
+
+
+if (UMESH_HAVE_TBB)
+  target_compile_definitions(umesh PUBLIC -DUMESH_HAVE_TBB=1)
+  if (TARGET TBB::tbb)
+    target_link_libraries(umesh PUBLIC TBB::tbb)
+  else()
+    target_link_libraries(umesh PUBLIC tbb)
   endif()
 endif()
+
+  # find_package(TBB)
+  # if (TBB_FOUND)
+  #   set(UMESH_HAVE_TBB ON)
+
+  #   message(STATUS "linking umesh to  ${TBB_LIBRARIES}")
+  #   if (TARGET TBB::tbb)
+  #     target_link_libraries(umesh PUBLIC TBB::tbb)
+  #   else()
+  #     target_link_libraries(umesh PUBLIC tbb)
+  #   endif()
+  #   target_include_directories(umesh PUBLIC
+  #     ${PROJECT_SOURCE_DIR}
+  #     )
+  #   target_compile_definitions(umesh PUBLIC -DUMESH_HAVE_TBB=1)
+  # else()
+  #   set(UMESH_HAVE_TBB OFF)
+  #   message("#umesh.cmake: TBB not found; falling back to serial execution of umesh::parallel_for")
+  # endif()
+#endif()
 
 # try to find CUDA; if we can't find it we'll simply disable all the
 # tools that need it
