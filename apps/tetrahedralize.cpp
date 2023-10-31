@@ -78,7 +78,8 @@ namespace umesh {
     // PRINT(prettyNumber(out->pyrs.size()));
     // PRINT(prettyNumber(out->wedges.size()));
     // PRINT(prettyNumber(out->hexes.size()));
-    
+
+    out->finalize();
     io::saveBinaryUMesh(outFileName,out);
     std::cout << "done all ..." << std::endl;
     
