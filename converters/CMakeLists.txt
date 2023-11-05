@@ -27,6 +27,18 @@ target_link_libraries(umeshImportLanderFun3D
   )
 
 # ------------------------------------------------------------------
+# tool that reads a 'raw' structured volume file, chops it into little
+# grids, and creates a 'umesh' that has these grids
+# ------------------------------------------------------------------
+add_executable(umeshRawToGrids
+  rawToGrids.cpp
+  )
+target_link_libraries(umeshRawToGrids
+  PUBLIC
+  umesh
+  )
+
+# ------------------------------------------------------------------
 # tool that takes a fun3d model (with mesh and volume files) and
 # converts them to one umesh per rank and one raw scalars per rank per
 # variable per time step

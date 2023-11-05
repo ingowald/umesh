@@ -260,7 +260,7 @@ namespace umesh {
 
   struct Grid {
     box3f domain;
-    vec3i dims;
+    vec3i numCells;
     int   scalarsOffset;
   };
   
@@ -313,7 +313,7 @@ namespace umesh {
         = tets.size()+pyrs.size()+wedges.size()+hexes.size();
       size_t numVoxelsInGrids = 0;
       for (auto grid : grids)
-        numVoxelsInGrids += grid.dims.x*grid.dims.y*grid.dims.z;
+        numVoxelsInGrids += grid.numCells.x*grid.numCells.y*grid.numCells.z;
       return numIndividual + numVoxelsInGrids;
     }
 
@@ -547,7 +547,7 @@ namespace umesh {
       case PYR:    return getPyrBounds(pr.ID);
       case WEDGE:  return getWedgeBounds(pr.ID);
       case HEX:    return getHexBounds(pr.ID);
-      case GRID:  return getGridBounds(pr.ID);
+      case GRID:   return getGridBounds(pr.ID);
       default: 
         throw std::runtime_error("not implemented");
       };
@@ -582,7 +582,7 @@ namespace umesh {
     std::vector<Pyr>   pyrs;
     std::vector<Wedge> wedges;
     std::vector<Hex>   hexes;
-    std::vector<Grid> grids;
+    std::vector<Grid>  grids;
     /*! the array of grids' scalar indices; first all scalar indices
         for grid 0, then all for grid 1, etc */
     std::vector<int>   gridIndices;
