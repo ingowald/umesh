@@ -257,7 +257,13 @@ namespace umesh {
     out << '(' << h.base << ',' << h.top << ')';
     return out;
   }
-    
+
+  struct Grid {
+    box3f domain;
+    vec3i dims;
+    int   scalarsOffset;
+  };
+  
   /*! basic unstructured mesh class - one set of 3-float vertices, and
     one std::vector each for tets, wedges, pyramids, and hexes, all
     using VTK format for the vertex index ordering (see
@@ -269,10 +275,11 @@ namespace umesh {
     using Pyr      = umesh::Pyr;
     using Wedge    = umesh::Wedge;
     using Hex      = umesh::Hex;
+    using Grid    = umesh::Grid;
     
     typedef std::shared_ptr<UMesh> SP;
 
-    typedef enum { TRI, QUAD, TET, PYR, WEDGE, HEX, INVALID } PrimType;
+    typedef enum { TRI, QUAD, TET, PYR, WEDGE, HEX, GRID, INVALID } PrimType;
     
     struct PrimRef {
       inline PrimRef() {}
@@ -294,7 +301,20 @@ namespace umesh {
     /*! returns total numer of volume elements */
     inline size_t numVolumeElements() const
     {
-      return tets.size()+pyrs.size()+wedges.size()+hexes.size();
+      return size()+pyrs.size()+wedges.size()+hexes.size()+grids.size();
+    }
+
+    /*! returns total numer of *cells*, which for meshes with grids
+        includes the invidiaul voxels of grids, not just the grid as
+        one element */
+    inline size_t numCells() const
+    {
+      size_t numIndividual
+        = tets.size()+pyrs.size()+wedges.size()+hexes.size();
+      size_t numVoxelsInGrids = 0;
+      for (auto grid : grids)
+        numVoxelsInGrids += grid.dims.x*grid.dims.y*grid.dims.z;
+      return numIndividual + numVoxelsInGrids;
     }
 
     /*! print some basic info of this mesh to std::cout */
@@ -476,6 +496,12 @@ namespace umesh {
       return b;
     }
     
+    inline box3f getGridBounds(const size_t ID) const
+    {
+      assert(ID < grids.size());
+      return grids[ID].domain;
+    }
+    
     inline box3f getPyrBounds(const size_t ID) const
     {
       assert(ID < pyrs.size());
@@ -517,10 +543,11 @@ namespace umesh {
     inline box3f getBounds(const PrimRef &pr) const
     {
       switch(pr.type) {
-      case TET:  return getTetBounds(pr.ID);
-      case PYR:  return getPyrBounds(pr.ID);
-      case WEDGE: return getWedgeBounds(pr.ID);
-      case HEX:  return getHexBounds(pr.ID);
+      case TET:    return getTetBounds(pr.ID);
+      case PYR:    return getPyrBounds(pr.ID);
+      case WEDGE:  return getWedgeBounds(pr.ID);
+      case HEX:    return getHexBounds(pr.ID);
+      case GRID:  return getGridBounds(pr.ID);
       default: 
         throw std::runtime_error("not implemented");
       };
@@ -555,6 +582,10 @@ namespace umesh {
     std::vector<Pyr>   pyrs;
     std::vector<Wedge> wedges;
     std::vector<Hex>   hexes;
+    std::vector<Grid> grids;
+    /*! the array of grids' scalar indices; first all scalar indices
+        for grid 0, then all for grid 1, etc */
+    std::vector<int>   gridIndices;
 
     /*! in some cases, it makes sense to allow for storing a
       user-provided per-vertex tag (may be empty) */
