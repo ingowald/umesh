@@ -82,10 +82,18 @@ namespace umesh {
           g.numCells.y = (ey-iy);
           g.numCells.z = (ez-iz);
           g.scalarsOffset = mesh->gridScalars.size();
+
+          range1f r;
           for (int iiz=iz;iiz<=ez;iiz++)
             for (int iiy=iy;iiy<=ey;iiy++)
-              for (int iix=ix;iix<=ex;iix++)
-                mesh->gridScalars.push_back(scalars[iix+dims.x*(iiy+(size_t)dims.y*(iiz))]);
+              for (int iix=ix;iix<=ex;iix++) {
+                float scalar = scalars[iix+dims.x*(iiy+(size_t)dims.y*(iiz))];
+                mesh->gridScalars.push_back(scalar);
+                if (!isnan(scalar))
+                  r.extend(scalar);
+              }
+          g.domain.lower.w = r.lower;
+          g.domain.upper.w = r.upper;
           mesh->grids.push_back(g);
         }
     mesh->finalize();

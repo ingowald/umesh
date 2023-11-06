@@ -259,7 +259,7 @@ namespace umesh {
   }
 
   struct Grid {
-    box3f domain;
+    box4f domain;
     vec3i numCells;
     int   scalarsOffset;
   };
@@ -455,13 +455,14 @@ namespace umesh {
       assert(ID < grids.size());
       range1f r = range1f();
       auto grid = grids[ID];
-      int numScalars
-        = (grid.numCells.x+1)
-        * (grid.numCells.y+1)
-        * (grid.numCells.z+1);
-      for (int i=0;i<numScalars;i++) 
-        r.extend(gridScalars[grid.scalarsOffset+i]);
-      return r;
+      return { grid.domain.lower.w,grid.domain.upper.w };
+      // int numScalars
+      //   = (grid.numCells.x+1)
+      //   * (grid.numCells.y+1)
+      //   * (grid.numCells.z+1);
+      // for (int i=0;i<numScalars;i++) 
+      //   r.extend(gridScalars[grid.scalarsOffset+i]);
+      // return r;
     }
     
     inline range1f getValueRange(const PrimRef &pr) const
@@ -496,7 +497,8 @@ namespace umesh {
     inline box3f getGridBounds(const size_t ID) const
     {
       assert(ID < grids.size());
-      return grids[ID].domain;
+      return box3f((const vec3f&)grids[ID].domain.lower,
+                   (const vec3f&)grids[ID].domain.upper);
     }
     
     inline box3f getPyrBounds(const size_t ID) const
