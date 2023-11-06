@@ -217,6 +217,15 @@ namespace umesh {
       translate((uint32_t*)&prim,8,otherMesh);
       target.hexes.push_back(prim);
     } break;
+    case UMesh::GRID: {
+      auto grid = otherMesh->grids[primRef.ID];
+      size_t numScalars = grid.numScalars();
+      size_t oldOffset  = otherMesh->gridScalars.size();
+      for (size_t i=0;i<numScalars;i++)
+        target.gridScalars.push_back(otherMesh->gridScalars[grid.scalarsOffset+i]);
+      grid.scalarsOffset = target.gridScalars.size()-numScalars;
+      target.grids.push_back(grid);
+    } break;
     default:
       throw std::runtime_error("un-implemented prim type?");
     }

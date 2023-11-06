@@ -259,6 +259,10 @@ namespace umesh {
   }
 
   struct Grid {
+    inline size_t numScalars() const
+    {
+      return (numCells.x+1)*size_t(numCells.y+1)*(numCells.z+1);
+    }
     box4f domain;
     vec3i numCells;
     int   scalarsOffset;
@@ -368,7 +372,8 @@ namespace umesh {
         hexes.size()+
         tets.size()+
         wedges.size()+
-        pyrs.size();
+        pyrs.size()+
+        grids.size();
     }
 
     inline range1f getValueRange() const {
