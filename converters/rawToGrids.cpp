@@ -20,6 +20,15 @@
 #include "umesh/RemeshHelper.h"
 #include <fstream>
 
+#ifndef PRINT
+# define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
+#else
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+#endif
+#endif
+
 namespace umesh {
 
   void usage(const std::string &error)
@@ -78,7 +87,7 @@ namespace umesh {
                 mesh->gridIndices.push_back(iix+dims.x*(iiy+(size_t)dims.y*(iiz)));
           mesh->grids.push_back(g);
         }
-    
+    mesh->finalize();
     mesh->saveTo(outFileName);
   }
 
@@ -96,27 +105,26 @@ int main(int ac, const char **av)
       outFileName = av[++i];
     else if (arg == "-f" || arg == "-if" || arg == "--format")
       inputFormat = av[++i];
-    else if (arg == "-d" || arg == "--dims") {
+    else if (arg == "-d" || arg == "-dims" || arg == "--dims") {
       dims.x = std::stoi(av[++i]);
       dims.y = std::stoi(av[++i]);
       dims.z = std::stoi(av[++i]);
     } else
       usage("unkonwn cmdline argument '"+arg+"'");
-
-    if (inFileName.empty())
-      usage("no input file specified");
-    if (outFileName.empty())
-      usage("no output file specified");
-    if (dims.x <= 0)
-      usage("no input volume dims specified");
-      
-    if (inputFormat == "float")
-      rawToGrids<float>();
-    else if (inputFormat == "uint8")
-      rawToGrids<uint8_t>();
-    else
-      usage("unknown input format '"+inputFormat+"'");
   }
+  if (inFileName.empty())
+    usage("no input file specified");
+  if (outFileName.empty())
+    usage("no output file specified");
+  if (dims.x <= 0)
+    usage("no input volume dims specified");
+      
+  if (inputFormat == "float")
+    rawToGrids<float>();
+  else if (inputFormat == "uint8")
+    rawToGrids<uint8_t>();
+  else
+    usage("unknown input format '"+inputFormat+"'");
   return 0;
 }
   

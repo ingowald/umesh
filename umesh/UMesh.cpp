@@ -37,7 +37,7 @@
 
 namespace umesh {
   
-  const size_t bum_magic = 0x234235567ULL;
+  const size_t bum_magic = 0x234235568ULL;
   
   /*! can be used to turn on/off logging/diagnostic messages in entire
     umesh library */
@@ -66,15 +66,17 @@ namespace umesh {
     // iw - changed that to write 'numPerVertex' rather than always
     // write one - this allows for later switching to more than one
     // attribute
-    if (perVertex) {
-      size_t numPerVertexAttributes = 1;
-      io::writeElement(out,numPerVertexAttributes);
-      io::writeString(out,perVertex->name);
-      io::writeVector(out,perVertex->values);
-    } else {
-      size_t numPerVertexAttributes = 0;
-      io::writeElement(out,numPerVertexAttributes);
-    }
+    std::vector<Attribute::SP> attrs = attributes;
+    if (perVertex && attributes.empty())
+      attrs.push_back(perVertex);
+
+    
+    size_t numPerVertexAttributes = attrs.size();
+    io::writeElement(out,numPerVertexAttributes);
+    for (int i=0;i<numPerVertexAttributes;i++) {
+      io::writeString(out,attrs[i]->name);
+      io::writeVector(out,attrs[i]->values);
+    } 
     size_t numPerElementAttributes = 0;
     io::writeElement(out,numPerElementAttributes);
     
@@ -84,6 +86,8 @@ namespace umesh {
     io::writeVector(out,pyrs);
     io::writeVector(out,wedges);
     io::writeVector(out,hexes);
+    io::writeVector(out,grids);
+    io::writeVector(out,gridIndices);
     io::writeVector(out,vertexTags);
   }
   
@@ -101,31 +105,31 @@ namespace umesh {
   /*! read from given (binary) stream */
   void UMesh::readFrom(std::istream &in)
   {
-    const size_t bum_magic_old = 0x234235566ULL;
-    bool supportsMultipleAttributes = true;
+    const size_t bum_magic_old = 0x234235567ULL;
+    bool hasGrids = true;
     size_t magic;
     io::readElement(in,magic);
     if (magic != bum_magic)
-    {
-      if (magic != bum_magic_old)
-        throw std::runtime_error("wrong magic number in umesh file ...");
-      supportsMultipleAttributes = false;
-    }
+      {
+        if (magic != bum_magic_old)
+          throw std::runtime_error("wrong magic number in umesh file ...");
+        hasGrids = false;
+      }
     io::readVector(in,this->vertices,"vertices");
     size_t numPerVertexAttributes = 1;
-    if (supportsMultipleAttributes)
-      io::readElement(in,numPerVertexAttributes);
+    io::readElement(in,numPerVertexAttributes);
     if (numPerVertexAttributes) {
-      this->perVertex = std::make_shared<Attribute>();
-      if (supportsMultipleAttributes)
-        io::readString(in,perVertex->name);
-      io::readVector(in,perVertex->values,"scalars");
-      this->perVertex->finalize();
+      Attribute::SP attr = std::make_shared<Attribute>();
+      io::readString(in,attr->name);
+      io::readVector(in,attr->values,"scalars");
+      attr->finalize();
+      attributes.push_back(attr);
     }
+    if (!attributes.empty())
+      perVertex = attributes[0];
       
     size_t numPerElementAttributes = 0;
-    if (supportsMultipleAttributes)
-      io::readElement(in,numPerElementAttributes);
+    io::readElement(in,numPerElementAttributes);
     assert(numPerElementAttributes == 0);
     
     io::readVector(in,this->triangles,"triangles");
@@ -134,6 +138,10 @@ namespace umesh {
     io::readVector(in,this->pyrs,"pyramids");
     io::readVector(in,this->wedges,"wedges");
     io::readVector(in,this->hexes,"hexes");
+    if (hasGrids) {
+      io::readVector(in,this->grids,"grids");
+      io::readVector(in,this->gridIndices,"gridIndices");
+    }
     // try {
     if (!in.eof())
       try {
@@ -301,11 +309,20 @@ namespace umesh {
         ss << ",#wedges=" << prettyNumber(wedges.size());
       if (!hexes.empty())
         ss << ",#hexes=" << prettyNumber(hexes.size());
+      if (!grids.empty())
+        ss << ",#grids=" << prettyNumber(grids.size())
+           << " (with " << prettyNumber(gridIndices.size()) << " grid indices)";
       if (perVertex) {
         ss << ",scalars=yes(name='" << perVertex->name << "')";
       } else {
         ss << ",scalars=no";
       }
+      ss << "total attributes: " << attributes.size() << " (";
+      for (int i=0;i<attributes.size();i++) {
+        if (i) ss << ",";
+        ss << "'" << attributes[i]->name << "'";
+      }
+      ss << ")";
       if (!vertexTags.empty()) {
         ss << ",tags=yes";
       } else {
@@ -320,6 +337,8 @@ namespace umesh {
       ss << "#pyrs  : " << prettyNumber(pyrs.size()) << std::endl;
       ss << "#wedges: " << prettyNumber(wedges.size()) << std::endl;
       ss << "#hexes : " << prettyNumber(hexes.size()) << std::endl;
+      ss << "#grids : " << prettyNumber(grids.size())
+ << " (with " << prettyNumber(gridIndices.size()) << " indices)" << std::endl;
       if  (!bounds.empty())
         ss << "bounds : " << bounds << std::endl;
       if (perVertex) {
@@ -331,6 +350,12 @@ namespace umesh {
       } else
         ss << "values : <none>" << std::endl;
       ss << "tags : " << (vertexTags.empty()?"no":"yes") << std::endl;
+      ss << "total attributes: " << attributes.size() <<  " (";
+      for (int i=0;i<attributes.size();i++) {
+        if (i) ss << ",";
+        ss << "'" << attributes[i]->name << "'";
+      }
+      ss << ")";
     }
     return ss.str();
   }
