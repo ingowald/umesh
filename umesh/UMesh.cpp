@@ -190,7 +190,6 @@ namespace umesh {
     std::vector<PrimRef> result;
     createVolumePrimRefs(result);
     return result;
-    // return std::move(result);
   }
 
 
@@ -201,7 +200,6 @@ namespace umesh {
     std::vector<PrimRef> result;
     createSurfacePrimRefs(result);
     return (result);
-    // return std::move(result);
   }
     
 
@@ -228,7 +226,7 @@ namespace umesh {
     tag) for every volumetric prim in this mesh */
   void UMesh::createVolumePrimRefs(std::vector<UMesh::PrimRef> &result)
   {
-    result.resize(tets.size()+pyrs.size()+wedges.size()+hexes.size());
+    result.resize(tets.size()+pyrs.size()+wedges.size()+hexes.size()+grids.size());
     parallel_for_blocked
       (0ull,tets.size(),64*1024,
        [&](size_t begin,size_t end){
@@ -253,6 +251,12 @@ namespace umesh {
          for (size_t i=begin;i<end;i++)
            result[tets.size()+pyrs.size()+wedges.size()+i] = PrimRef(HEX,i);
        });
+    parallel_for_blocked
+      (0ull,grids.size(),64*1024,
+       [&](size_t begin,size_t end){
+         for (size_t i=begin;i<end;i++)
+           result[i] = PrimRef(GRID,i);
+       });
   }
 
 
@@ -261,13 +265,16 @@ namespace umesh {
   {
     if (perVertex) perVertex->finalize();
     bounds = box3f();
+
+    std::vector<UMesh::PrimRef> allPrims = createAllPrimRefs();
+    
     std::mutex mutex;
     parallel_for_blocked
-      (0,vertices.size(),16*1024,
+      (0,allPrims.size(),16*1024,
        [&](size_t begin, size_t end) {
          box3f rangeBounds;
          for (size_t i=begin;i<end;i++)
-           rangeBounds.extend(vertices[i]);
+           rangeBounds.extend(getBounds(allPrims[i]));
          std::lock_guard<std::mutex> lock(mutex);
          bounds.extend(rangeBounds);
        });
