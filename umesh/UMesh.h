@@ -275,7 +275,7 @@ namespace umesh {
     using Pyr      = umesh::Pyr;
     using Wedge    = umesh::Wedge;
     using Hex      = umesh::Hex;
-    using Grid    = umesh::Grid;
+    using Grid     = umesh::Grid;
     
     typedef std::shared_ptr<UMesh> SP;
 
@@ -378,33 +378,15 @@ namespace umesh {
         throw std::runtime_error("invalid per-vertex value range field - did you forget some finalize() somewhere?");
       }
       
-      // if (perVertex->valueRange.empty()) {
-      //   for (int i=0;i<tets.size();i++) 
-      //     perVertex->valueRange.extend(getTetValueRange(i));
-      //   for (int i=0;i<pyrs.size();i++) 
-      //     perVertex->valueRange.extend(getPyrValueRange(i));
-      //   for (int i=0;i<wedges.size();i++) 
-      //     perVertex->valueRange.extend(getWedgeValueRange(i));
-      //   for (int i=0;i<hexes.size();i++) 
-      //     perVertex->valueRange.extend(getHexValueRange(i));
-      // }
-      return perVertex->valueRange;
+      range1f r = perVertex->valueRange;
+      r.extend(gridsScalarRange);
+      return r;
     }
     
     inline box3f getBounds() const
     {
       if (bounds.empty())
         throw std::runtime_error("invalid mesh bounds value - did you forget some finalize() somewhere?");
-      // if (this->bounds.empty()) {
-      //   for (int i=0;i<tets.size();i++)
-      //     bounds.extend(getTetBounds(i));
-      //   for (int i=0;i<pyrs.size();i++)
-      //     bounds.extend(getPyrBounds(i));
-      //   for (int i=0;i<wedges.size();i++)
-      //     bounds.extend(getWedgeBounds(i));
-      //   for (int i=0;i<hexes.size();i++)
-      //     bounds.extend(getHexBounds(i));
-      // }
       return bounds;
     }
 
@@ -467,6 +449,20 @@ namespace umesh {
         .including(perVertex->values[hexes[ID].base.w]);
       return b;
     }
+
+    inline range1f getGridValueRange(const size_t ID) const
+    {
+      assert(ID < grids.size());
+      range1f r = range1f();
+      auto grid = grids[ID];
+      int numScalars
+        = (grid.numCells.x+1)
+        * (grid.numCells.y+1)
+        * (grid.numCells.z+1);
+      for (int i=0;i<numScalars;i++) 
+        r.extend(gridScalars[grid.scalarsOffset+i]);
+      return r;
+    }
     
     inline range1f getValueRange(const PrimRef &pr) const
     {
@@ -475,6 +471,7 @@ namespace umesh {
       case PYR:  return getPyrValueRange(pr.ID);
       case WEDGE:return getWedgeValueRange(pr.ID);
       case HEX:  return getHexValueRange(pr.ID);
+      case GRID: return getGridValueRange(pr.ID);
       default: 
         throw std::runtime_error("not implemented");
       };
@@ -584,19 +581,23 @@ namespace umesh {
     std::vector<Wedge> wedges;
     std::vector<Hex>   hexes;
     std::vector<Grid>  grids;
-    /*! the array of grids' scalar indices; first all scalar indices
-        for grid 0, then all for grid 1, etc */
-    std::vector<int>   gridIndices;
+    /*! the array of all grids' scalaras; this is indepenent of the
+        other elements' scalars (which are in attribute arrays, which
+        is kinda ...  ugh; but anything else is even more 'ugh'. This
+        array first contains all scalars for grid[0], then fro grid[1],
+        etc */
+    std::vector<float> gridScalars;
 
     /*! in some cases, it makes sense to allow for storing a
       user-provided per-vertex tag (may be empty) */
     std::vector<size_t> vertexTags;
     
     box3f   bounds;
+    range1f gridsScalarRange;
   };
   
   /*! helper functoin for printf debugging - puts the four elemnt
       sizes into a human-readable (short) string*/
   std::string sizeString(UMesh::SP mesh);
 
-} // ::umesh
+  } // ::umesh

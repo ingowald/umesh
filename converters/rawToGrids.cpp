@@ -57,12 +57,13 @@ namespace umesh {
     std::ifstream in(inFileName.c_str(),std::ios::binary);
     UMesh::SP mesh = std::make_shared<UMesh>();
 
-    Attribute::SP scalars = std::make_shared<Attribute>(dims.x*(size_t)dims.y*dims.z);
+    mesh->perVertex = std::make_shared<Attribute>(0);
+    
+    std::vector<float> scalars(dims.x*(size_t)dims.y*dims.z);
     std::vector<T> inputs(dims.x*(size_t)dims.y*dims.z);
     in.read((char*)inputs.data(),inputs.size()*sizeof(inputs[0]));
     for (int64_t i=0;i<inputs.size();i++)
-      scalars->values[i] = toScalar(inputs[i]);
-    mesh->perVertex = scalars;
+      scalars[i] = toScalar(inputs[i]);
 
     for (int iz=0;iz<dims.z-1;iz+=(brickSize-1)) 
       for (int iy=0;iy<dims.y-1;iy+=(brickSize-1)) 
@@ -80,11 +81,11 @@ namespace umesh {
           g.numCells.x = (ex-ix);
           g.numCells.y = (ey-iy);
           g.numCells.z = (ez-iz);
-          g.scalarsOffset = mesh->gridIndices.size();
+          g.scalarsOffset = mesh->gridScalars.size();
           for (int iiz=iz;iiz<=ez;iiz++)
             for (int iiy=iy;iiy<=ey;iiy++)
               for (int iix=ix;iix<=ex;iix++)
-                mesh->gridIndices.push_back(iix+dims.x*(iiy+(size_t)dims.y*(iiz)));
+                mesh->gridScalars.push_back(scalars[iix+dims.x*(iiy+(size_t)dims.y*(iiz))]);
           mesh->grids.push_back(g);
         }
     mesh->finalize();

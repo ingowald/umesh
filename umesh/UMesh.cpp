@@ -87,7 +87,7 @@ namespace umesh {
     io::writeVector(out,wedges);
     io::writeVector(out,hexes);
     io::writeVector(out,grids);
-    io::writeVector(out,gridIndices);
+    io::writeVector(out,gridScalars);
     io::writeVector(out,vertexTags);
   }
   
@@ -140,7 +140,7 @@ namespace umesh {
     io::readVector(in,this->hexes,"hexes");
     if (hasGrids) {
       io::readVector(in,this->grids,"grids");
-      io::readVector(in,this->gridIndices,"gridIndices");
+      io::readVector(in,this->gridScalars,"gridScalars");
     }
     // try {
     if (!in.eof())
@@ -278,6 +278,17 @@ namespace umesh {
          std::lock_guard<std::mutex> lock(mutex);
          bounds.extend(rangeBounds);
        });
+
+    gridsScalarRange = range1f();
+    parallel_for_blocked
+      (0,grids.size(),16*1024,
+       [&](size_t begin, size_t end) {
+         range1f rangeBounds;
+         for (size_t i=begin;i<end;i++)
+           rangeBounds.extend(getGridValueRange(i));
+         std::lock_guard<std::mutex> lock(mutex);
+         gridsScalarRange.extend(rangeBounds);
+       });
   }
   
   /*! create std::vector of ALL primitmive references, includign
@@ -318,7 +329,7 @@ namespace umesh {
         ss << ",#hexes=" << prettyNumber(hexes.size());
       if (!grids.empty())
         ss << ",#grids=" << prettyNumber(grids.size())
-           << " (with " << prettyNumber(gridIndices.size()) << " grid indices)";
+           << " (with " << prettyNumber(gridScalars.size()) << " grid scalars)";
       if (perVertex) {
         ss << ",scalars=yes(name='" << perVertex->name << "')";
       } else {
@@ -345,7 +356,7 @@ namespace umesh {
       ss << "#wedges: " << prettyNumber(wedges.size()) << std::endl;
       ss << "#hexes : " << prettyNumber(hexes.size()) << std::endl;
       ss << "#grids : " << prettyNumber(grids.size())
- << " (with " << prettyNumber(gridIndices.size()) << " indices)" << std::endl;
+ << " (with " << prettyNumber(gridScalars.size()) << " grid scalars)" << std::endl;
       if  (!bounds.empty())
         ss << "bounds : " << bounds << std::endl;
       if (perVertex) {
