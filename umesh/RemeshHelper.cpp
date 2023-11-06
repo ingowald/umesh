@@ -225,6 +225,8 @@ namespace umesh {
         target.gridScalars.push_back(otherMesh->gridScalars[grid.scalarsOffset+i]);
       grid.scalarsOffset = target.gridScalars.size()-numScalars;
       target.grids.push_back(grid);
+      if (!target.perVertex)
+        target.perVertex = std::make_shared<Attribute>();
     } break;
     default:
       throw std::runtime_error("un-implemented prim type?");
