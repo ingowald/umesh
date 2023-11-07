@@ -27,6 +27,18 @@ target_link_libraries(umeshImportLanderFun3D
   )
 
 # ------------------------------------------------------------------
+# tools: read older umesh variant with other magic number, and write
+# as a current-version umesh
+# ------------------------------------------------------------------
+# add_executable(umeshImportOldUMesh
+#   importOldUMesh.cpp
+#   )
+# target_link_libraries(umeshImportOldUMesh
+#   PUBLIC
+#   umesh
+#   )
+
+# ------------------------------------------------------------------
 # tool that reads a 'raw' structured volume file, chops it into little
 # grids, and creates a 'umesh' that has these grids
 # ------------------------------------------------------------------

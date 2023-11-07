@@ -455,6 +455,27 @@ namespace umesh {
       return b;
     }
 
+    inline range1f getTriValueRange(const size_t ID) const
+    {
+      assert(ID < tiangles.size());
+      const range1f b = range1f()
+        .including(perVertex->values[triangles[ID].x])
+        .including(perVertex->values[triangles[ID].y])
+        .including(perVertex->values[triangles[ID].z]);
+      return b;
+    }
+
+    inline range1f getQuadValueRange(const size_t ID) const
+    {
+      assert(ID < tiangles.size());
+      const range1f b = range1f()
+        .including(perVertex->values[quads[ID].x])
+        .including(perVertex->values[quads[ID].y])
+        .including(perVertex->values[quads[ID].z])
+        .including(perVertex->values[quads[ID].w]);
+      return b;
+    }
+
     inline range1f getGridValueRange(const size_t ID) const
     {
       assert(ID < grids.size());
@@ -473,6 +494,8 @@ namespace umesh {
     inline range1f getValueRange(const PrimRef &pr) const
     {
       switch(pr.type) {
+      case TRI:  return getTriValueRange(pr.ID);
+      case QUAD: return getQuadValueRange(pr.ID);
       case TET:  return getTetValueRange(pr.ID);
       case PYR:  return getPyrValueRange(pr.ID);
       case WEDGE:return getWedgeValueRange(pr.ID);
@@ -529,6 +552,27 @@ namespace umesh {
         .including(vertices[wedges[ID].back.z]);
     }
     
+    inline box3f getTriBounds(const size_t ID) const
+    {
+      assert(ID < triangles.size());
+      const box3f b = box3f()
+        .including(vertices[triangles[ID].x])
+        .including(vertices[triangles[ID].y])
+        .including(vertices[triangles[ID].z]);
+      return b;
+    }
+    
+    inline box3f getQuadBounds(const size_t ID) const
+    {
+      assert(ID < quads.size());
+      const box3f b = box3f()
+        .including(vertices[quads[ID].x])
+        .including(vertices[quads[ID].y])
+        .including(vertices[quads[ID].z])
+        .including(vertices[quads[ID].w]);
+      return b;
+    }
+    
     inline box3f getHexBounds(const size_t ID) const
     {
       assert(ID < hexes.size());
@@ -547,13 +591,16 @@ namespace umesh {
     inline box3f getBounds(const PrimRef &pr) const
     {
       switch(pr.type) {
+      case TRI:    return getTriBounds(pr.ID);
+      case QUAD:   return getQuadBounds(pr.ID);
       case TET:    return getTetBounds(pr.ID);
       case PYR:    return getPyrBounds(pr.ID);
       case WEDGE:  return getWedgeBounds(pr.ID);
       case HEX:    return getHexBounds(pr.ID);
       case GRID:   return getGridBounds(pr.ID);
       default: 
-        throw std::runtime_error("not implemented");
+        throw std::runtime_error("primitive type #"
+                                 +std::to_string((int)pr.type)+" not implemented");
       };
     }
 

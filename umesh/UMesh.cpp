@@ -101,7 +101,58 @@ namespace umesh {
     std::ofstream out(fileName, std::ios_base::binary);
     writeTo(out);
   }
+
+  /*! reads format encoded by version tag '0x234235566ULL' - magic has
+      already been read */
+  void read_566(UMesh *mesh, std::istream &in)
+  {
+    io::readVector(in,mesh->vertices,"vertices");
+    PRINT(mesh->vertices.size());
+    size_t numPerVertexAttributes = 1;
+    PRINT(numPerVertexAttributes);
+    if (numPerVertexAttributes) {
+      PING;
+      Attribute::SP attr = std::make_shared<Attribute>();
+      // io::readString(in,attr->name);
+      // PRINT(attr->name);
+      io::readVector(in,attr->values,"scalars");
+      attr->finalize();
+      mesh->attributes.push_back(attr);
+      PING;
+      PRINT(attr->values.size());
+      PRINT(mesh->vertices.size());
+    }
+    if (!mesh->attributes.empty())
+      mesh->perVertex = mesh->attributes[0];
+      
+    size_t numPerElementAttributes = 0;
+    // io::readElement(in,numPerElementAttributes);
+    PRINT(numPerElementAttributes);
+    assert(numPerElementAttributes == 0);
     
+    PING;
+    io::readVector(in,mesh->triangles,"triangles");
+    PING;
+    PRINT(mesh->triangles.size());
+    io::readVector(in,mesh->quads,"quads");
+    PRINT(mesh->quads.size());
+    io::readVector(in,mesh->tets,"tets");
+    io::readVector(in,mesh->pyrs,"pyramids");
+    io::readVector(in,mesh->wedges,"wedges");
+    io::readVector(in,mesh->hexes,"hexes");
+    PRINT(mesh->hexes.size());
+    // try {
+    if (!in.eof())
+      try {
+        io::readVector(in,mesh->vertexTags,"vertexTags");
+      } catch (...) {
+        /* ignore ... */
+      }
+    PING;
+    mesh->finalize();
+    PING;
+  }
+  
   /*! read from given (binary) stream */
   void UMesh::readFrom(std::istream &in)
   {
@@ -109,6 +160,10 @@ namespace umesh {
     bool hasGrids = true;
     size_t magic;
     io::readElement(in,magic);
+    if (magic == 0x234235566ULL) {
+      read_566(this,in); return;
+    }
+    
     if (magic != bum_magic)
       {
         if (magic != bum_magic_old)
@@ -266,12 +321,15 @@ namespace umesh {
     if (perVertex) perVertex->finalize();
     bounds = box3f();
 
+    PING;
     std::vector<UMesh::PrimRef> allPrims = createAllPrimRefs();
     
+    PING;
     std::mutex mutex;
     parallel_for_blocked
       (0,allPrims.size(),16*1024,
        [&](size_t begin, size_t end) {
+         PRINT(begin);
          box3f rangeBounds;
          for (size_t i=begin;i<end;i++)
            rangeBounds.extend(getBounds(allPrims[i]));
@@ -279,6 +337,7 @@ namespace umesh {
          bounds.extend(rangeBounds);
        });
 
+    PING;
     gridsScalarRange = range1f();
     parallel_for_blocked
       (0,grids.size(),16*1024,
@@ -289,6 +348,7 @@ namespace umesh {
          std::lock_guard<std::mutex> lock(mutex);
          gridsScalarRange.extend(rangeBounds);
        });
+    PING;
   }
   
   /*! create std::vector of ALL primitmive references, includign
