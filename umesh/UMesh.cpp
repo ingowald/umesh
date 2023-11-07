@@ -37,7 +37,7 @@
 
 namespace umesh {
   
-  const size_t bum_magic = 0x234235567ULL;
+  const size_t bum_magic = 0x234235568ULL;
   
   /*! can be used to turn on/off logging/diagnostic messages in entire
     umesh library */
@@ -66,15 +66,17 @@ namespace umesh {
     // iw - changed that to write 'numPerVertex' rather than always
     // write one - this allows for later switching to more than one
     // attribute
-    if (perVertex) {
-      size_t numPerVertexAttributes = 1;
-      io::writeElement(out,numPerVertexAttributes);
-      io::writeString(out,perVertex->name);
-      io::writeVector(out,perVertex->values);
-    } else {
-      size_t numPerVertexAttributes = 0;
-      io::writeElement(out,numPerVertexAttributes);
-    }
+    std::vector<Attribute::SP> attrs = attributes;
+    if (perVertex && attributes.empty())
+      attrs.push_back(perVertex);
+
+    
+    size_t numPerVertexAttributes = attrs.size();
+    io::writeElement(out,numPerVertexAttributes);
+    for (int i=0;i<numPerVertexAttributes;i++) {
+      io::writeString(out,attrs[i]->name);
+      io::writeVector(out,attrs[i]->values);
+    } 
     size_t numPerElementAttributes = 0;
     io::writeElement(out,numPerElementAttributes);
     
@@ -84,6 +86,8 @@ namespace umesh {
     io::writeVector(out,pyrs);
     io::writeVector(out,wedges);
     io::writeVector(out,hexes);
+    io::writeVector(out,grids);
+    io::writeVector(out,gridScalars);
     io::writeVector(out,vertexTags);
   }
   
@@ -97,35 +101,76 @@ namespace umesh {
     std::ofstream out(fileName, std::ios_base::binary);
     writeTo(out);
   }
+
+  /*! reads format encoded by version tag '0x234235566ULL' - magic has
+      already been read */
+  void read_566(UMesh *mesh, std::istream &in)
+  {
+    io::readVector(in,mesh->vertices,"vertices");
+    size_t numPerVertexAttributes = 1;
+    if (numPerVertexAttributes) {
+      Attribute::SP attr = std::make_shared<Attribute>();
+      // io::readString(in,attr->name);
+      // PRINT(attr->name);
+      io::readVector(in,attr->values,"scalars");
+      attr->finalize();
+      mesh->attributes.push_back(attr);
+    }
+    if (!mesh->attributes.empty())
+      mesh->perVertex = mesh->attributes[0];
+      
+    size_t numPerElementAttributes = 0;
+    // io::readElement(in,numPerElementAttributes);
+    assert(numPerElementAttributes == 0);
     
+    io::readVector(in,mesh->triangles,"triangles");
+    io::readVector(in,mesh->quads,"quads");
+    io::readVector(in,mesh->tets,"tets");
+    io::readVector(in,mesh->pyrs,"pyramids");
+    io::readVector(in,mesh->wedges,"wedges");
+    io::readVector(in,mesh->hexes,"hexes");
+    // try {
+    if (!in.eof())
+      try {
+        io::readVector(in,mesh->vertexTags,"vertexTags");
+      } catch (...) {
+        /* ignore ... */
+      }
+    mesh->finalize();
+  }
+  
   /*! read from given (binary) stream */
   void UMesh::readFrom(std::istream &in)
   {
-    const size_t bum_magic_old = 0x234235566ULL;
-    bool supportsMultipleAttributes = true;
+    const size_t bum_magic_old = 0x234235567ULL;
+    bool hasGrids = true;
     size_t magic;
     io::readElement(in,magic);
-    if (magic != bum_magic)
-    {
-      if (magic != bum_magic_old)
-        throw std::runtime_error("wrong magic number in umesh file ...");
-      supportsMultipleAttributes = false;
+    if (magic == 0x234235566ULL) {
+      read_566(this,in); return;
     }
+    
+    if (magic != bum_magic)
+      {
+        if (magic != bum_magic_old)
+          throw std::runtime_error("wrong magic number in umesh file ...");
+        hasGrids = false;
+      }
     io::readVector(in,this->vertices,"vertices");
     size_t numPerVertexAttributes = 1;
-    if (supportsMultipleAttributes)
-      io::readElement(in,numPerVertexAttributes);
+    io::readElement(in,numPerVertexAttributes);
     if (numPerVertexAttributes) {
-      this->perVertex = std::make_shared<Attribute>();
-      if (supportsMultipleAttributes)
-        io::readString(in,perVertex->name);
-      io::readVector(in,perVertex->values,"scalars");
-      this->perVertex->finalize();
+      Attribute::SP attr = std::make_shared<Attribute>();
+      io::readString(in,attr->name);
+      io::readVector(in,attr->values,"scalars");
+      attr->finalize();
+      attributes.push_back(attr);
     }
+    if (!attributes.empty())
+      perVertex = attributes[0];
       
     size_t numPerElementAttributes = 0;
-    if (supportsMultipleAttributes)
-      io::readElement(in,numPerElementAttributes);
+    io::readElement(in,numPerElementAttributes);
     assert(numPerElementAttributes == 0);
     
     io::readVector(in,this->triangles,"triangles");
@@ -134,6 +179,10 @@ namespace umesh {
     io::readVector(in,this->pyrs,"pyramids");
     io::readVector(in,this->wedges,"wedges");
     io::readVector(in,this->hexes,"hexes");
+    if (hasGrids) {
+      io::readVector(in,this->grids,"grids");
+      io::readVector(in,this->gridScalars,"gridScalars");
+    }
     // try {
     if (!in.eof())
       try {
@@ -182,7 +231,6 @@ namespace umesh {
     std::vector<PrimRef> result;
     createVolumePrimRefs(result);
     return result;
-    // return std::move(result);
   }
 
 
@@ -193,7 +241,6 @@ namespace umesh {
     std::vector<PrimRef> result;
     createSurfacePrimRefs(result);
     return (result);
-    // return std::move(result);
   }
     
 
@@ -220,7 +267,7 @@ namespace umesh {
     tag) for every volumetric prim in this mesh */
   void UMesh::createVolumePrimRefs(std::vector<UMesh::PrimRef> &result)
   {
-    result.resize(tets.size()+pyrs.size()+wedges.size()+hexes.size());
+    result.resize(tets.size()+pyrs.size()+wedges.size()+hexes.size()+grids.size());
     parallel_for_blocked
       (0ull,tets.size(),64*1024,
        [&](size_t begin,size_t end){
@@ -245,6 +292,12 @@ namespace umesh {
          for (size_t i=begin;i<end;i++)
            result[tets.size()+pyrs.size()+wedges.size()+i] = PrimRef(HEX,i);
        });
+    parallel_for_blocked
+      (0ull,grids.size(),64*1024,
+       [&](size_t begin,size_t end){
+         for (size_t i=begin;i<end;i++)
+           result[i] = PrimRef(GRID,i);
+       });
   }
 
 
@@ -253,15 +306,29 @@ namespace umesh {
   {
     if (perVertex) perVertex->finalize();
     bounds = box3f();
+
+    std::vector<UMesh::PrimRef> allPrims = createAllPrimRefs();
+    
     std::mutex mutex;
     parallel_for_blocked
-      (0,vertices.size(),16*1024,
+      (0,allPrims.size(),16*1024,
        [&](size_t begin, size_t end) {
          box3f rangeBounds;
          for (size_t i=begin;i<end;i++)
-           rangeBounds.extend(vertices[i]);
+           rangeBounds.extend(getBounds(allPrims[i]));
          std::lock_guard<std::mutex> lock(mutex);
          bounds.extend(rangeBounds);
+       });
+
+    gridsScalarRange = range1f();
+    parallel_for_blocked
+      (0,grids.size(),16*1024,
+       [&](size_t begin, size_t end) {
+         range1f rangeBounds;
+         for (size_t i=begin;i<end;i++)
+           rangeBounds.extend(getGridValueRange(i));
+         std::lock_guard<std::mutex> lock(mutex);
+         gridsScalarRange.extend(rangeBounds);
        });
   }
   
@@ -301,11 +368,20 @@ namespace umesh {
         ss << ",#wedges=" << prettyNumber(wedges.size());
       if (!hexes.empty())
         ss << ",#hexes=" << prettyNumber(hexes.size());
+      if (!grids.empty())
+        ss << ",#grids=" << prettyNumber(grids.size())
+           << " (with " << prettyNumber(gridScalars.size()) << " grid scalars)";
       if (perVertex) {
         ss << ",scalars=yes(name='" << perVertex->name << "')";
       } else {
         ss << ",scalars=no";
       }
+      ss << "total attributes: " << attributes.size() << " (";
+      for (int i=0;i<attributes.size();i++) {
+        if (i) ss << ",";
+        ss << "'" << attributes[i]->name << "'";
+      }
+      ss << ")";
       if (!vertexTags.empty()) {
         ss << ",tags=yes";
       } else {
@@ -320,6 +396,8 @@ namespace umesh {
       ss << "#pyrs  : " << prettyNumber(pyrs.size()) << std::endl;
       ss << "#wedges: " << prettyNumber(wedges.size()) << std::endl;
       ss << "#hexes : " << prettyNumber(hexes.size()) << std::endl;
+      ss << "#grids : " << prettyNumber(grids.size())
+ << " (with " << prettyNumber(gridScalars.size()) << " grid scalars)" << std::endl;
       if  (!bounds.empty())
         ss << "bounds : " << bounds << std::endl;
       if (perVertex) {
@@ -331,6 +409,12 @@ namespace umesh {
       } else
         ss << "values : <none>" << std::endl;
       ss << "tags : " << (vertexTags.empty()?"no":"yes") << std::endl;
+      ss << "total attributes: " << attributes.size() <<  " (";
+      for (int i=0;i<attributes.size();i++) {
+        if (i) ss << ",";
+        ss << "'" << attributes[i]->name << "'";
+      }
+      ss << ")";
     }
     return ss.str();
   }
