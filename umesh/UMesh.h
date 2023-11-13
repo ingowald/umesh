@@ -457,7 +457,7 @@ namespace umesh {
 
     inline range1f getTriValueRange(const size_t ID) const
     {
-      assert(ID < tiangles.size());
+      assert(ID < triangles.size());
       const range1f b = range1f()
         .including(perVertex->values[triangles[ID].x])
         .including(perVertex->values[triangles[ID].y])
@@ -467,7 +467,7 @@ namespace umesh {
 
     inline range1f getQuadValueRange(const size_t ID) const
     {
-      assert(ID < tiangles.size());
+      assert(ID < quads.size());
       const range1f b = range1f()
         .including(perVertex->values[quads[ID].x])
         .including(perVertex->values[quads[ID].y])

@@ -65,10 +65,17 @@ namespace umesh {
 }
 inline bool operator<(const umesh::Tet &a, const umesh::Tet &b)
 {
-  const uint64_t *pa = (const uint64_t *)&a;
-  const uint64_t *pb = (const uint64_t *)&b;
-  const bool res =  (pa[0] < pb[0]) || ((pa[0] == pb[0]) && (pa[1] < pb[1]));
-  return res;
+    const uint32_t *pa = (uint32_t *)&a;
+    const uint32_t *pb = (uint32_t *)&b;
+    for (int i=0;i<4;i++) {
+      if (pa[i] < pb[i]) return true;
+      if (pa[i] > pb[i]) return false;
+    }
+    return false;
+  // const uint64_t *pa = (const uint64_t *)&a;
+  // const uint64_t *pb = (const uint64_t *)&b;
+  // const bool res =  (pa[0] < pb[0]) || ((pa[0] == pb[0]) && (pa[1] < pb[1]));
+  // return res;
 }
 // namespace std {
 //   inline bool operator<(const umesh::vec4f a, const umesh::vec4f b)
@@ -126,18 +133,29 @@ namespace umesh {
 
   inline bool operator<(const Exa::LogicalCell &a, const Exa::LogicalCell &b)
   {
-    const uint64_t *pa = (uint64_t *)&a;
-    const uint64_t *pb = (uint64_t *)&b;
-    return
-      (pa[0] < pb[0])
-      || (pa[0] == pb[0] && pa[1] < pb[1]);
+    const uint32_t *pa = (uint32_t *)&a;
+    const uint32_t *pb = (uint32_t *)&b;
+    for (int i=0;i<4;i++) {
+      if (pa[i] < pb[i]) return true;
+      if (pa[i] > pb[i]) return false;
+    }
+    return false;
+    // return
+    //   (pa[0] < pb[0])
+    //   || (pa[0] == pb[0] && pa[1] < pb[1]);
   }
 
   inline bool operator==(const Exa::LogicalCell &a, const Exa::LogicalCell &b)
   {
-    const uint64_t *pa = (uint64_t *)&a;
-    const uint64_t *pb = (uint64_t *)&b;
-    return pa[0] == pb[0] && pa[1] == pb[1];
+    const uint32_t *pa = (uint32_t *)&a;
+    const uint32_t *pb = (uint32_t *)&b;
+    for (int i=0;i<4;i++) {
+      if (pa[i] != pb[i]) return false;
+    }
+    return true;
+    // const uint64_t *pa = (uint64_t *)&a;
+    // const uint64_t *pb = (uint64_t *)&b;
+    // return pa[0] == pb[0] && pa[1] == pb[1];
   }
 
   inline bool operator<(const Exa::Cell &a, const Exa::Cell &b)

@@ -296,7 +296,7 @@ namespace umesh {
       (0ull,grids.size(),64*1024,
        [&](size_t begin,size_t end){
          for (size_t i=begin;i<end;i++)
-           result[i] = PrimRef(GRID,i);
+           result[tets.size()+pyrs.size()+wedges.size()+hexes.size()+i] = PrimRef(GRID,i);
        });
   }
 
