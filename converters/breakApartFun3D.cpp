@@ -30,6 +30,10 @@ namespace umesh {
   std::vector<std::string> variables;
   /*! list of ALL time steps in first rank's scalars file */
   std::vector<int>         timeSteps;
+  bool extractAll = false;
+
+  std::string variable = "";
+  int timeStep = -1;
   
   bool doPart(const std::string &outFileNameBase, int rank)
   {
@@ -58,6 +62,37 @@ namespace umesh {
     UMesh::SP mesh = io::UGrid32Loader::load(io::UGrid32Loader::FLOAT,
                                              meshFileName);
     std::cout << "loaded part mesh " << mesh->toString() << " " << mesh->getBounds() << std::endl;
+
+    if (variable != "") {
+      int ts = timeStep;\
+      std::string var = variable;
+      mesh->perVertex = std::make_shared<Attribute>();
+      std::cout << "attaching requested scalar field..." << std::endl;
+      std::string scalarsFileName
+          = scalarsPath
+        //    + "volume_data."
+        + std::to_string(rank);
+      char ts_suffix[100];
+      sprintf(ts_suffix,"__ts_%07i",ts);
+      const std::string outFileNameScalars
+        = outFileNameBase + "__var_" + var + ts_suffix + "." + std::to_string(rank) + ".floats";
+      
+      std::cout << "reading time step " << ts
+                  << " from " << scalarsFileName << std::endl;
+      
+      std::vector<uint64_t> globalVertexIDs;
+      /*! desired time step's scalars for current brick, if provided */
+      std::vector<float> scalars
+        = io::fun3d::readTimeStep(scalarsFileName,var,ts,
+                                  &globalVertexIDs);
+      for (int i=0;i<10;i++)
+        std::cout << scalars[i] << " ";
+      std::cout << std::endl;
+      mesh->perVertex->values = scalars;
+      mesh->perVertex->finalize();
+    } 
+    mesh->finalize();
+    
 #if 1
     const std::string outFileNameMeshGhost = outFileNameBase + "." + std::to_string(rank) + "-with-ghost-cells.umesh";
     mesh->saveTo(outFileNameMeshGhost);
@@ -73,7 +108,8 @@ namespace umesh {
     const std::string outFileNameMesh = outFileNameBase + "." + std::to_string(rank) + ".umesh";
     mesh->saveTo(outFileNameMesh);
 
-
+    if (extractAll) {
+      std::cout << "exporting *ALL* time steps and variables to separate scalar-files" << std::endl;
     for (auto var : variables) {
       for (auto ts : timeSteps) {
           
@@ -99,10 +135,11 @@ namespace umesh {
         std::cout << std::endl;
         std::ofstream bin(outFileNameScalars,std::ios::binary);
         bin.write((const char *)scalars.data(),scalars.size()*sizeof(scalars[0]));
-std::cout << UMESH_TERMINAL_GREEN 
-<< " -> written to " << outFileNameScalars
-<< UMESH_TERMINAL_DEFAULT << std::endl;
+        std::cout << UMESH_TERMINAL_GREEN 
+                  << " -> written to " << outFileNameScalars
+                  << UMESH_TERMINAL_DEFAULT << std::endl;
       }
+    }
     }
     std::cout << " >>> done part " << rank << ", got " << mesh->toString(false) << " (note it's OK that bounds aren't set yet)" << std::endl;
     return true;
@@ -145,6 +182,12 @@ std::cout << UMESH_TERMINAL_GREEN
         scalarsPath = av[++i];
       else if (arg == "-o")
         outFileBase = av[++i];
+      else if (arg == "-all" || arg == "--extract-all")
+        extractAll = true;
+      else if (arg == "-ts" || arg == "--time-step")
+        timeStep = atoi(av[++i]);
+      else if (arg == "-var" || arg == "--variable")
+        variable = av[++i];
       else if (arg[0] != '-')
         path = arg;
       else
@@ -152,7 +195,6 @@ std::cout << UMESH_TERMINAL_GREEN
     }
     if (path == "") usage("no input path specified");
     if (outFileBase == "") usage("no output filename specified");
-
 
     std::cout << "reading info on which times steps and fields there are ..." << std::endl;
     {
@@ -166,6 +208,8 @@ std::cout << UMESH_TERMINAL_GREEN
       for (auto var : timeSteps) std::cout << " " << var;
       std::cout << std::endl;
     }
+    if (!extractAll && (timeStep < 0 || variable == ""))
+      exit(0);
     
     std::cout << "OK, got the field info, now extracting ranks' data" << std::endl;
     for (int i=begin;i<(begin+num);i++)
