@@ -34,6 +34,7 @@ namespace umesh {
 
   std::string variable = "";
   int timeStep = -1;
+  bool ghosts = false;
   
   bool doPart(const std::string &outFileNameBase, int rank)
   {
@@ -94,8 +95,10 @@ namespace umesh {
     mesh->finalize();
     
 #if 1
-    const std::string outFileNameMeshGhost = outFileNameBase + "." + std::to_string(rank) + "-with-ghost-cells.umesh";
-    mesh->saveTo(outFileNameMeshGhost);
+    if (ghosts) {
+      const std::string outFileNameMeshGhost = outFileNameBase + "." + std::to_string(rank) + "-with-ghost-cells.umesh";
+      mesh->saveTo(outFileNameMeshGhost);
+    }
 
     mesh->tets.resize(meta.tets);
     mesh->pyrs.resize(meta.pyrs);
@@ -182,6 +185,8 @@ namespace umesh {
         scalarsPath = av[++i];
       else if (arg == "-o")
         outFileBase = av[++i];
+      else if (arg == "--ghosts")
+        ghosts = true;
       else if (arg == "-all" || arg == "--extract-all")
         extractAll = true;
       else if (arg == "-ts" || arg == "--time-step")
