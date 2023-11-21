@@ -35,6 +35,7 @@ namespace umesh {
   std::string variable = "";
   int timeStep = -1;
   bool ghosts = false;
+  // bool verbose = false;
   
   bool doPart(const std::string &outFileNameBase, int rank)
   {
@@ -181,6 +182,8 @@ namespace umesh {
         num = atoi(av[++i]);
       else if (arg == "--first")
         begin = atoi(av[++i]);
+      else if (arg == "-v")
+        umesh::verbose = true;
       else if (arg == "-s" || arg == "--scalars")
         scalarsPath = av[++i];
       else if (arg == "-o")
@@ -199,7 +202,6 @@ namespace umesh {
         usage("unknown cmdline arg "+arg);
     }
     if (path == "") usage("no input path specified");
-    if (outFileBase == "") usage("no output filename specified");
 
     std::cout << "reading info on which times steps and fields there are ..." << std::endl;
     {
@@ -215,6 +217,8 @@ namespace umesh {
     }
     if (!extractAll && (timeStep < 0 || variable == ""))
       exit(0);
+
+    if (outFileBase == "") usage("no output filename specified");
     
     std::cout << "OK, got the field info, now extracting ranks' data" << std::endl;
     for (int i=begin;i<(begin+num);i++)

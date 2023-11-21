@@ -29,6 +29,18 @@ target_link_libraries(umeshInfo
   )
 
 # ------------------------------------------------------------------
+# print basic info of a umesh: #verts, tris, quads, tets, etc, as well
+# as bounding box.
+# ------------------------------------------------------------------
+add_executable(umeshReplaceScalarField
+  replaceScalarField.cpp
+  )
+target_link_libraries(umeshReplaceScalarField
+  PUBLIC
+  umesh
+  )
+
+# ------------------------------------------------------------------
 # same as info, with added sanity checks (valid indices etc)
 # ------------------------------------------------------------------
 add_executable(umeshSanityCheck

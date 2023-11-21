@@ -130,5 +130,24 @@ namespace umesh {
       return s;
     }
 
+    /*! helper tool that loads a binary file of floats, and returns
+        them as a std::vector. File must *not* have any header or
+        trailing info, and size of vector is determined by size of
+        file */
+    inline std::vector<float> loadScalars(std::string &fileName)
+    {
+      std::ifstream in(fileName.c_str(),std::ios::binary);
+      if (!in.good())
+        throw std::runtime_error("could not open "+fileName);
+      float f;
+      std::vector<float> floats;
+      while (!in.eof()) {
+        in.read((char *)&f,sizeof(f));
+        if (!in.good()) break;
+        floats.push_back(f);
+      }
+      return floats;
+    }
+    
   } // ::tetty::io
 } // ::tetty
