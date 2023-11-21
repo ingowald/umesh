@@ -29,40 +29,6 @@ namespace umesh {
     exit (error != "");
   };
 
-  UMesh::SP
-  importOFF(const std::string &fileName)
-  {
-    UMesh::SP mesh = std::make_shared<UMesh>();
-    mesh->perVertex = std::make_shared<Attribute>();
-
-    FILE *file = fopen(fileName.c_str(),"r");
-    // std::ifstream in(fileName);
-    int numVerts, numTets;
-    //in >> numVerts >> numTets;
-    int rc = fscanf(file,"%i %i\n",&numVerts,&numTets);
-    assert(rc == 2);
-    for (int i=0; i<numVerts;i++) {
-      vec3f v;
-      double f;
-      // in >> v.x >> v.y >> v.z >> f;
-      int rc = fscanf(file,"%f %f %f %lf\n",&v.x,&v.y,&v.z,&f);
-      assert(rc == 4);
-      
-      mesh->vertices.push_back(v);
-      mesh->perVertex->values.push_back((float)f);
-    }
-
-    for (int i=0; i<numTets;i++) {
-      vec4i tet;
-      int rc = fscanf(file,"%i %i %i %i\n",&tet.x,&tet.y,&tet.z,&tet.w);
-      assert(rc == 4);
-      mesh->tets.push_back(tet); //-vec4i(1));
-    }
-    mesh->finalize();
-    fclose(file);
-    return mesh;
-  }
-  
   extern "C" int main(int ac, char **av)
   {
     std::string ugridFileName;
