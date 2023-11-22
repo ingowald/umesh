@@ -313,7 +313,7 @@ namespace umesh {
         just append all other elements and change their indices to
         correctly point to the appended other vertices */
     void append(UMesh::SP other);
-    
+
     /*! returns total numer of *cells*, which for meshes with grids
         includes the invidiaul voxels of grids, not just the grid as
         one element */
@@ -655,6 +655,12 @@ namespace umesh {
     box3f   bounds;
     range1f gridsScalarRange;
   };
+
+  /*! merge mulitple meshes into one. will _not_ try to find shared
+    vertices, will just append all other elements and change their
+    indices to correctly point to the appended other vertices */
+  UMesh::SP mergeMeshes(const std::vector<UMesh::SP> &inputs);
+    
   
   /*! helper functoin for printf debugging - puts the four elemnt
       sizes into a human-readable (short) string*/

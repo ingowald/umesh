@@ -342,6 +342,116 @@ namespace umesh {
     return allPRs;
   }
 
+  /*! merge mulitple meshes into one. will _not_ try to find shared
+    vertices, will just append all other elements and change their
+    indices to correctly point to the appended other vertices */
+  UMesh::SP mergeMeshes(const std::vector<UMesh::SP> &inputs)
+  {
+    size_t numVtx=0,
+      numTet=0,
+      numWdg=0,
+      numPyr=0,
+      numHex=0,
+      numTri=0,
+      numQud=0,
+      numGsc=0,
+      numGrd=0;
+    std::vector<int> vtxOffsets;
+    std::vector<int> tetOffsets;
+    std::vector<int> triOffsets;
+    std::vector<int> qudOffsets;
+    std::vector<int> wdgOffsets;
+    std::vector<int> pyrOffsets;
+    std::vector<int> hexOffsets;
+    std::vector<int> grdOffsets;
+    std::vector<int> gscOffsets;
+    for (auto input : inputs) {
+      
+      vtxOffsets.push_back(numVtx);
+      triOffsets.push_back(numTri);
+      qudOffsets.push_back(numQud);
+      tetOffsets.push_back(numTet);
+      pyrOffsets.push_back(numPyr);
+      wdgOffsets.push_back(numWdg);
+      hexOffsets.push_back(numHex);
+      grdOffsets.push_back(numGrd);
+      gscOffsets.push_back(numGsc);
+
+      numVtx += input->vertices.size();
+      numTri += input->triangles.size();
+      numQud += input->quads.size();
+      numPyr += input->pyrs.size();
+      numWdg += input->wedges.size();
+      numHex += input->hexes.size();
+      numGrd += input->grids.size();
+      numGsc += input->gridScalars.size();
+    }
+    UMesh::SP out = std::make_shared<UMesh>();
+    out->perVertex = std::make_shared<Attribute>();
+    out->perVertex->values.resize(numVtx);
+    out->vertices.resize(numVtx);
+    out->triangles.resize(numTri);
+    out->quads.resize(numQud);
+    out->tets.resize(numTet);
+    out->pyrs.resize(numPyr);
+    out->wedges.resize(numWdg);
+    out->hexes.resize(numHex);
+    out->grids.resize(numGrd);
+    out->gridScalars.resize(numGsc);
+    
+    parallel_for
+      ((int)inputs.size(),
+       [&](int meshID) {
+         auto input = inputs[meshID];
+         for (int i=0;i<input->triangles.size();i++) {
+           auto prim = input->triangles[i];
+           for (int j=0;j<prim.numVertices;j++)
+             prim[j] += vtxOffsets[meshID];
+           out->triangles[triOffsets[meshID]+i] = prim;
+         }
+         for (int i=0;i<input->quads.size();i++) {
+           auto prim = input->quads[i];
+           for (int j=0;j<prim.numVertices;j++)
+             prim[j] += vtxOffsets[meshID];
+           out->quads[qudOffsets[meshID]+i] = prim;
+         }
+         for (int i=0;i<input->tets.size();i++) {
+           auto prim = input->tets[i];
+           for (int j=0;j<prim.numVertices;j++)
+             prim[j] += vtxOffsets[meshID];
+           out->tets[tetOffsets[meshID]+i] = prim;
+         }
+         for (int i=0;i<input->pyrs.size();i++) {
+           auto prim = input->pyrs[i];
+           for (int j=0;j<prim.numVertices;j++)
+             prim[j] += vtxOffsets[meshID];
+           out->pyrs[pyrOffsets[meshID]+i] = prim;
+         }
+         for (int i=0;i<input->wedges.size();i++) {
+           auto prim = input->wedges[i];
+           for (int j=0;j<prim.numVertices;j++)
+             prim[j] += vtxOffsets[meshID];
+           out->wedges[wdgOffsets[meshID]+i] = prim;
+         }
+         for (int i=0;i<input->hexes.size();i++) {
+           auto prim = input->hexes[i];
+           for (int j=0;j<prim.numVertices;j++)
+             prim[j] += vtxOffsets[meshID];
+           out->hexes[hexOffsets[meshID]+i] = prim;
+         }
+         for (int i=0;i<input->grids.size();i++) {
+           auto prim = input->grids[i];
+           prim.scalarsOffset += gscOffsets[meshID];
+           out->grids[grdOffsets[meshID]+i] = prim;
+         }
+         for (int i=0;i<input->gridScalars.size();i++) {
+           out->gridScalars[gscOffsets[meshID]+i] = input->gridScalars[i];
+         }
+       });
+    return out;
+  }
+    
+  
   /*! appends another mesh's vertices and primitmives to this
     current mesh. will _not_ try to find shared vertices, will
     just append all other elements and change their indices to
@@ -477,4 +587,5 @@ namespace umesh {
     return ss.str();
   }
 
+  
 } // ::tetty
