@@ -342,6 +342,64 @@ namespace umesh {
     return allPRs;
   }
 
+  /*! appends another mesh's vertices and primitmives to this
+    current mesh. will _not_ try to find shared vertices, will
+    just append all other elements and change their indices to
+    correctly point to the appended other vertices */
+  void UMesh::append(UMesh::SP other)
+  {
+    size_t oldNumVertices = vertices.size();
+    // ----------- vertices -----------
+    for (auto v : other->vertices)
+      vertices.push_back(v);
+    // ----------- scalars -----------
+    if (perVertex) {
+      assert(other->perVertex);
+      for (auto v : other->perVertex->values)
+        perVertex->values.push_back(v);
+    }
+    // ----------- tets -----------
+    for (auto prim : other->tets) {
+      for (int i=0;i<prim.numVertices;i++)
+        prim[i] += oldNumVertices;
+      tets.push_back(prim);
+    }
+    // ----------- hexes -----------
+    for (auto prim : other->hexes) {
+      for (int i=0;i<prim.numVertices;i++)
+        prim[i] += oldNumVertices;
+      hexes.push_back(prim);
+    }
+    // ----------- pyrs -----------
+    for (auto prim : other->pyrs) {
+      for (int i=0;i<prim.numVertices;i++)
+        prim[i] += oldNumVertices;
+      pyrs.push_back(prim);
+    }
+    // ----------- wedges -----------
+    for (auto prim : other->wedges) {
+      for (int i=0;i<prim.numVertices;i++)
+        prim[i] += oldNumVertices;
+      wedges.push_back(prim);
+    }
+
+    
+    // ----------- grid-scalars -----------
+    size_t oldNumGridScalars = gridScalars.size();
+    for (auto s : other->gridScalars)
+      gridScalars.push_back(s);
+    // ----------- grids -----------
+    for (auto prim : other->grids) {
+      prim.scalarsOffset += oldNumGridScalars;
+      grids.push_back(prim);
+    }
+
+
+    // =========== done ===========
+    finalize();
+  }
+    
+  
   /*! print some basic info of this mesh to std::cout */
   void UMesh::print()
   {

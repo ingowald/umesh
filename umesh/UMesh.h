@@ -308,6 +308,12 @@ namespace umesh {
       return size()+pyrs.size()+wedges.size()+hexes.size()+grids.size();
     }
 
+    /*! appends another mesh's vertices and primitmives to this
+        current mesh. will _not_ try to find shared vertices, will
+        just append all other elements and change their indices to
+        correctly point to the appended other vertices */
+    void append(UMesh::SP other);
+    
     /*! returns total numer of *cells*, which for meshes with grids
         includes the invidiaul voxels of grids, not just the grid as
         one element */
