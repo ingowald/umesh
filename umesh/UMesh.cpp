@@ -406,6 +406,13 @@ namespace umesh {
          PRINT(meshID);
          auto input = inputs[meshID];
          PRINT(input->toString());
+         for (int i=0;i<input->vertices.size();i++) {
+           auto v = input->vertices[i];
+           auto s = input->perVertex->values[i];
+           out->vertices[vtxOffsets[meshID]+i] = v;
+           out->perVertex->values[vtxOffsets[meshID]+i] = s;
+         }
+
          for (int i=0;i<input->triangles.size();i++) {
            auto prim = input->triangles[i];
            for (int j=0;j<prim.numVertices;j++)
