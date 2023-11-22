@@ -403,9 +403,7 @@ namespace umesh {
     serial_for
       ((int)inputs.size(),
        [&](int meshID) {
-         PRINT(meshID);
          auto input = inputs[meshID];
-         PRINT(input->toString());
          for (int i=0;i<input->vertices.size();i++) {
            auto v = input->vertices[i];
            auto s = input->perVertex->values[i];
