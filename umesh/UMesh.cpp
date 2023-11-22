@@ -380,6 +380,7 @@ namespace umesh {
       numVtx += input->vertices.size();
       numTri += input->triangles.size();
       numQud += input->quads.size();
+      numTet += input->tets.size();
       numPyr += input->pyrs.size();
       numWdg += input->wedges.size();
       numHex += input->hexes.size();
@@ -399,10 +400,12 @@ namespace umesh {
     out->grids.resize(numGrd);
     out->gridScalars.resize(numGsc);
     
-    parallel_for
+    serial_for
       ((int)inputs.size(),
        [&](int meshID) {
+         PRINT(meshID);
          auto input = inputs[meshID];
+         PRINT(input->toString());
          for (int i=0;i<input->triangles.size();i++) {
            auto prim = input->triangles[i];
            for (int j=0;j<prim.numVertices;j++)
@@ -448,6 +451,7 @@ namespace umesh {
            out->gridScalars[gscOffsets[meshID]+i] = input->gridScalars[i];
          }
        });
+    out->finalize();
     return out;
   }
     
