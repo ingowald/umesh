@@ -60,6 +60,17 @@ target_link_libraries(umeshImportOFF
   umesh
   )
 
+# ------------------------------------------------------------------
+# load umesh(es) and save list of all bounding boxes
+# ------------------------------------------------------------------
+add_executable(umeshExportBBs
+  exportBBs.cpp
+  )
+target_link_libraries(umeshExportBBs
+  PUBLIC
+  umesh
+  )
+
 
 # ------------------------------------------------------------------
 # import a OFF file to umesh format
