@@ -37,7 +37,7 @@ namespace umesh {
       if (arg == "-h")
         usage();
       else if (arg == "-o")
-        outFileName = av[++];
+        outFileName = av[++i];
       else if (arg[0] != '-')
         inFileNames.push_back(arg);
       else
