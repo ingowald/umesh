@@ -36,6 +36,8 @@ namespace umesh {
       const std::string arg = av[i];
       if (arg == "-h")
         usage();
+      else if (arg == "-o")
+        outFileName = av[++];
       else if (arg[0] != '-')
         inFileNames.push_back(arg);
       else
