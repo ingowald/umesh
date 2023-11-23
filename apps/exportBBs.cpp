@@ -48,10 +48,10 @@ namespace umesh {
     for (auto inFileName : inFileNames) {
       std::cout << "loading umesh from " << inFileName << std::endl;
       UMesh::SP in = io::loadBinaryUMesh(inFileName);
+      std::cout << " -> got mesh:\n" << in->toString(false) << std::endl;
       std::vector<UMesh::PrimRef> prims = in->createAllPrimRefs();
       for (auto prim : prims) {
         box4f bb = in->getBounds4f(prim);
-        std::cout << " -> got mesh:\n" << in->toString(false) << std::endl;
         out.write((char *)&bb,sizeof(bb));
       }
     }
