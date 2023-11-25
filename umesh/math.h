@@ -224,6 +224,7 @@ namespace umesh {
   inline vec3f operator-(const vec3f& a, const vec3f& b) { return vec3f(a.x - b.x, a.y - b.y, a.z - b.z); }
   inline vec3f operator+(const vec3f& a, const vec3f& b) { return vec3f(a.x + b.x, a.y + b.y, a.z + b.z); }
   inline vec4f operator+(const vec4f& a, const vec4f& b) { return vec4f(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
+  inline vec3f operator/(const vec3f& a, const vec3f& b) { return vec3f(a.x / b.x, a.y / b.y, a.z / b.z); }
 
   inline vec3f operator*(const vec3f& a, float b) { return vec3f(a.x * b, a.y * b, a.z * b); }
   inline vec3f operator*(float a, const vec3f& b) { return vec3f(a * b.x, a * b.y, a * b.z); }
