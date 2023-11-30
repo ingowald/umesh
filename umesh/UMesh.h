@@ -487,7 +487,9 @@ namespace umesh {
       assert(ID < grids.size());
       range1f r = range1f();
       auto grid = grids[ID];
-      return { grid.domain.lower.w,grid.domain.upper.w };
+      r.lower = grid.domain.lower.w;
+      r.upper = grid.domain.upper.w;
+      return r;
       // int numScalars
       //   = (grid.numCells.x+1)
       //   * (grid.numCells.y+1)
