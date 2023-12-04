@@ -14,6 +14,7 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
+option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(UMESH_USE_CUDA "Build w/ CUDA support?" OFF)
 option(UMESH_USE_VTK "Build w/ VTK support?" OFF)
 cmake_minimum_required(VERSION 3.16)
