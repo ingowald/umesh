@@ -132,6 +132,7 @@ namespace umesh {
       const std::string fileName = fileBase+".umesh";
       std::cout << "saving out " << fileName
                 << " w/ " << prettyNumber(out->size()) << " prims" << std::endl;
+      out->finalize();
       io::saveBinaryUMesh(fileName,out);
     }
   }
@@ -151,9 +152,10 @@ namespace umesh {
         outFileBase = av[++i];
       else if (arg == "-lt" || arg == "--leaf-threshold")
         leafThreshold = atoi(av[++i]);
-      else if (arg == "-n" || arg == "-mb" || arg == "--max-bricks")
+      else if (arg == "-n" || arg == "-mb" || arg == "--max-bricks") {
         maxBricks = atoi(av[++i]);
-      else if (arg == "-pro" || arg == "--prim-refs-only")
+        leafThreshold= 1;
+      } else if (arg == "-pro" || arg == "--prim-refs-only")
         primRefsOnly = true;
       else if (arg[0] != '-')
         inFileName = arg;
@@ -211,10 +213,14 @@ namespace umesh {
       delete brick;
     }
 
-    std::ofstream boundsFile(outFileBase+".domains",std::ios::binary);
-    std::cout << "writing " << brickDomains.size() << " brick domains" << std::endl;
+    std::cout << "# =======================================================" << std::endl;
+    std::cout << "# Done partitioning, writing final results" << std::endl;
+    std::cout << "# =======================================================" << std::endl;
+    const std::string boundsFileName = outFileBase+".domains";
+    std::ofstream boundsFile(boundsFileName.c_str(),std::ios::binary);
+    std::cout << "writing " << brickDomains.size() << " per-brick domains and value ranges to " << boundsFileName << ")" << std::endl;
     io::writeVector(boundsFile,brickDomains);
-    std::cout << "writing " << valueRanges.size() << " brick value ranges" << std::endl;
+    // std::cout << "writing " << valueRanges.size() << " brick value ranges" << std::endl;
     io::writeVector(boundsFile,valueRanges);
     std::cout << "done writing domains... done all" << std::endl;
   }
