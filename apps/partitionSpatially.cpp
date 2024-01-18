@@ -131,7 +131,7 @@ namespace umesh {
         indexer.add(in,prim);
       const std::string fileName = fileBase+".umesh";
       std::cout << "saving out " << fileName
-                << " w/ " << prettyNumber(out->size()) << " prims" << std::endl;
+                << " w/ " << prettyNumber(out->size()) << " prims, domain is " << brick->domain << std::endl;
       out->finalize();
       io::saveBinaryUMesh(fileName,out);
     }
