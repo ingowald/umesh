@@ -19,8 +19,9 @@
 # -----------------------------------------------------------------
 add_library(umesh)
 target_include_directories(umesh PUBLIC
-  ${PROJECT_SOURCE_DIR}
-  )
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include/>
+)
 
 if (WIN32)
   OPTION(UMESH_USE_TBB "Use TBB to parallelize host-side code?" OFF)
@@ -158,6 +159,33 @@ target_sources(umesh PRIVATE
 #  )
 
 
+# ------------------------------------------------------------------
+# install target
+# ------------------------------------------------------------------
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  DESTINATION include
+  COMPONENT headers
+  FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hh"
+    PATTERN "*.hpp"
+    PATTERN "*.hxx"
+    PATTERN "*.inl"
+    PATTERN "*.inc"
+)
+
+install(TARGETS umesh
+    EXPORT umeshConfig
+    RUNTIME DESTINATION bin COMPONENT libraries
+    LIBRARY DESTINATION lib COMPONENT libraries
+    ARCHIVE DESTINATION lib COMPONENT libraries
+)
+
+install(EXPORT umeshConfig
+    NAMESPACE umesh::
+    DESTINATION lib/cmake/umesh
+)
 
 
 

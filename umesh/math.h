@@ -187,6 +187,7 @@ namespace umesh {
     static box3f empty_box() { return box3f(vec3f(FLT_MAX), vec3f(-FLT_MAX)); }
     box3f including(const vec3f &other) const;
     bool overlaps(const box3f &other) const;
+    bool contains(const vec3f &t) const;
     void extend(const vec3f& a);
     void extend(const box3f& a);
     vec3f size() const;
@@ -224,6 +225,7 @@ namespace umesh {
   inline vec3f operator-(const vec3f& a, const vec3f& b) { return vec3f(a.x - b.x, a.y - b.y, a.z - b.z); }
   inline vec3f operator+(const vec3f& a, const vec3f& b) { return vec3f(a.x + b.x, a.y + b.y, a.z + b.z); }
   inline vec4f operator+(const vec4f& a, const vec4f& b) { return vec4f(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
+  inline vec3f operator/(const vec3f& a, const vec3f& b) { return vec3f(a.x / b.x, a.y / b.y, a.z / b.z); }
 
   inline vec3f operator*(const vec3f& a, float b) { return vec3f(a.x * b, a.y * b, a.z * b); }
   inline vec3f operator*(float a, const vec3f& b) { return vec3f(a * b.x, a * b.y, a * b.z); }
@@ -320,6 +322,13 @@ namespace umesh {
       !(upper.x < other.lower.x) &&
       !(upper.y < other.lower.y) &&
       !(upper.z < other.lower.z);
+  }
+
+  inline bool box3f::contains(const vec3f &t) const
+  {
+    return (t.x >= lower.x && t.x <= upper.x) &&
+           (t.y >= lower.y && t.y <= upper.y) &&
+           (t.z >= lower.z && t.z <= upper.z);
   }
 
   inline int divRoundUp(int a, int b) { return (a+b-1)/b; }

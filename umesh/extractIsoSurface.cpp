@@ -524,7 +524,7 @@ namespace umesh {
         doIsoSurfaceTets(fatVertices,mutex,in,begin,end,isoValue);
       });
 
-#if 0
+#if 1
     if (verbose)
     std::cout << "#umesh.iso: pushing " << prettyNumber(in->pyrs.size())
               << " pyramids" << std::endl;
