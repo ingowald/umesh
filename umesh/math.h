@@ -60,6 +60,7 @@
 #include <vector>
 #include <algorithm>
 #include <limits.h>
+#include <cstdint>
 
 #if (!defined(__umesh_both__))
 # if defined(__CUDA_ARCH__)
