@@ -378,6 +378,10 @@ namespace umesh {
       gscOffsets.push_back(numGsc);
 
       numVtx += input->vertices.size();
+      if (numVtx > INT_MAX)
+        throw std::runtime_error
+          ("cannot merge meshes - merged mesh would have to "
+           "many vertices to be addressable by 32-bit (signed) integers");
       numTri += input->triangles.size();
       numQud += input->quads.size();
       numTet += input->tets.size();
