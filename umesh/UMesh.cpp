@@ -367,15 +367,15 @@ namespace umesh {
     std::vector<int> gscOffsets;
     for (auto input : inputs) {
       
-      vtxOffsets.push_back(numVtx);
-      triOffsets.push_back(numTri);
-      qudOffsets.push_back(numQud);
-      tetOffsets.push_back(numTet);
-      pyrOffsets.push_back(numPyr);
-      wdgOffsets.push_back(numWdg);
-      hexOffsets.push_back(numHex);
-      grdOffsets.push_back(numGrd);
-      gscOffsets.push_back(numGsc);
+      vtxOffsets.push_back((int)numVtx);
+      triOffsets.push_back((int)numTri);
+      qudOffsets.push_back((int)numQud);
+      tetOffsets.push_back((int)numTet);
+      pyrOffsets.push_back((int)numPyr);
+      wdgOffsets.push_back((int)numWdg);
+      hexOffsets.push_back((int)numHex);
+      grdOffsets.push_back((int)numGrd);
+      gscOffsets.push_back((int)numGsc);
 
       numVtx += input->vertices.size();
       if (numVtx > INT_MAX)
@@ -484,25 +484,25 @@ namespace umesh {
     // ----------- tets -----------
     for (auto prim : other->tets) {
       for (int i=0;i<prim.numVertices;i++)
-        prim[i] += oldNumVertices;
+        prim[i] += (int)oldNumVertices;
       tets.push_back(prim);
     }
     // ----------- hexes -----------
     for (auto prim : other->hexes) {
       for (int i=0;i<prim.numVertices;i++)
-        prim[i] += oldNumVertices;
+        prim[i] += (int)oldNumVertices;
       hexes.push_back(prim);
     }
     // ----------- pyrs -----------
     for (auto prim : other->pyrs) {
       for (int i=0;i<prim.numVertices;i++)
-        prim[i] += oldNumVertices;
+        prim[i] += (int)oldNumVertices;
       pyrs.push_back(prim);
     }
     // ----------- wedges -----------
     for (auto prim : other->wedges) {
       for (int i=0;i<prim.numVertices;i++)
-        prim[i] += oldNumVertices;
+        prim[i] += (int)oldNumVertices;
       wedges.push_back(prim);
     }
 
@@ -513,7 +513,7 @@ namespace umesh {
       gridScalars.push_back(s);
     // ----------- grids -----------
     for (auto prim : other->grids) {
-      prim.scalarsOffset += oldNumGridScalars;
+      prim.scalarsOffset += (int)oldNumGridScalars;
       grids.push_back(prim);
     }
 

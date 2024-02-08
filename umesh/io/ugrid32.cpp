@@ -136,7 +136,7 @@ namespace umesh {
         if (vertexFormat == UGrid32Loader::DOUBLE) {
           double pos[3];
           readArray(data,pos,3);
-          v = vec3f(pos[0],pos[1],pos[2]);
+          v = vec3f((float)pos[0], (float)pos[1], (float)pos[2]);
         } else {
           float pos[3];
           readArray(data,pos,3);

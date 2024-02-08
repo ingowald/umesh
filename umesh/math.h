@@ -240,8 +240,8 @@ namespace umesh {
   inline vec3i operator-(const vec3i& a) { return vec3i(-a.x, -a.y, -a.z); }
   inline vec3i operator-(const vec3i& a, const vec3i& b) { return vec3i(a.x - b.x, a.y - b.y, a.z - b.z); }
   inline vec3i operator+(const vec3i& a, const vec3i& b) { return vec3i(a.x + b.x, a.y + b.y, a.z + b.z); }
-  inline vec3i operator*(const vec3i& a, float b) { return vec3i(a.x * b, a.y * b, a.z * b); }
-  inline vec3i operator*(float a, const vec3i& b) { return vec3i(a * b.x, a * b.y, a * b.z); }
+  inline vec3i operator*(const vec3i& a, int b) { return vec3i(a.x * b, a.y * b, a.z * b); }
+  inline vec3i operator*(int a, const vec3i& b) { return vec3i(a * b.x, a * b.y, a * b.z); }
   inline vec3i operator*(const vec3i& a, const vec3i& b) { return vec3i(a.x * b.x, a.y * b.y, a.z * b.z); }
   inline vec3i operator>>(const vec3i& a, int b) { return vec3i(a.x>>b, a.y>>b, a.z>>b); }
   inline vec3i operator/(const vec3i& a, int b) { return vec3i(a.x/b, a.y/b, a.z/b); }

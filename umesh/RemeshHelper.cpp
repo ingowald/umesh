@@ -223,7 +223,7 @@ namespace umesh {
       size_t oldOffset  = otherMesh->gridScalars.size();
       for (size_t i=0;i<numScalars;i++)
         target.gridScalars.push_back(otherMesh->gridScalars[grid.scalarsOffset+i]);
-      grid.scalarsOffset = target.gridScalars.size()-numScalars;
+      grid.scalarsOffset = int(target.gridScalars.size()-numScalars);
       target.grids.push_back(grid);
       if (!target.perVertex)
         target.perVertex = std::make_shared<Attribute>();
@@ -261,7 +261,7 @@ namespace umesh {
          for (size_t i=begin;i<end;i++) {
            vertices[i].pos = mesh->vertices[i];
            vertices[i].scalar = mesh->perVertex->values[i];
-           vertices[i].orgID = i;
+           vertices[i].orgID = (int)i;
            vertices[i].active = false;
          }
        });
