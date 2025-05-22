@@ -49,7 +49,7 @@ namespace umesh {
         mappedScalarsFileName = av[++i];
       else if (arg == "-is" || arg == "--iso-scalars")
         isoScalarsFileName = av[++i];
-      } else if (arg == "-iv" || arg == "--iso-value" || arg == "--iso")
+      else if (arg == "-iv" || arg == "--iso-value" || arg == "--iso")
         isoValue = std::stof(av[++i]);
       else if (arg == "--obj")
         objFileName = av[++i];
