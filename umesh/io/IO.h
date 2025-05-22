@@ -69,6 +69,23 @@ namespace umesh {
            readElement(in,t[i]);
     }
 
+    namespace wholeFile {
+      template<typename T>
+      inline std::vector<T> readVectorOf(const std::string &fileName)
+      {
+        std::ifstream in(fileName,std::ios::binary);
+        std::vector<T> vt;
+        while (true) {
+          if (in.eof()) break;
+          T t;
+          in.read((char*)&t,sizeof(t));
+          if (!in.good()) break;
+          vt.push_back(t);
+        }
+        return vt;
+      }
+    }
+    
     template<typename T>
     inline void writeElement(std::ostream &out, const T &t)
     {
@@ -100,6 +117,13 @@ namespace umesh {
       assert(out.good());
     }
 
+    template<typename T>
+    void writeVector(const std::string &outFileName, const std::vector<T> &vt)
+    {
+      std::ofstream out(outFileName,std::ios::binary);
+      writeVector(out,vt);
+    }
+    
     template<typename T>
     inline T readElement(std::istream &in)
     {

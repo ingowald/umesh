@@ -26,7 +26,10 @@ namespace umesh {
       scalar field, but can have any combinatoin of volumetric
       elemnets; tris and quads in the input get ignored; input remains
       unchanged. */
-  UMesh::SP extractIsoSurface(UMesh::SP input, float isoValue);
+  UMesh::SP extractIsoSurface(UMesh::SP input,
+                              float isoValue,
+                              /*! OPTIONAL array of mapped scalar; can be empty */
+                              const std::vector<float> &mappedScalar);
   
 } // ::umesh
 

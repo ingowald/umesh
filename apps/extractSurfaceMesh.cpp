@@ -20,18 +20,20 @@
 
 #include "umesh/io/ugrid64.h"
 #include "umesh/io/UMesh.h"
+#include "umesh/io/IO.h"
 #include "umesh/RemeshHelper.h"
 #include "umesh/extractSurfaceMesh.h"
 #include <algorithm>
 
 namespace umesh {
 
-  typedef enum { INVALID, UMESH, OBJ } Format;
+  typedef enum { INVALID, UMESH, OBJ, HSMESH } Format;
 
   Format formatFromFileName(const std::string &fileName)
   {
     if (fileName.substr(fileName.size()-4) == ".obj") return OBJ;
     if (fileName.substr(fileName.size()-6) == ".umesh") return UMESH;
+    if (fileName.substr(fileName.size()-7) == ".hsmesh") return HSMESH;
     return INVALID;
   }
   
@@ -46,6 +48,28 @@ namespace umesh {
     std::cout << "... done" << std::endl;
   }
 
+  void saveToHSMESH(const std::string &outFileName, UMesh::SP mesh)
+  {
+    std::cout << "... saving (in HSMESH format) to " << outFileName << std::endl;
+    std::ofstream out(outFileName);
+
+    io::writeVector(out,mesh->vertices);
+    std::vector<vec3f> noNormals;
+    io::writeVector(out,noNormals);
+    std::vector<vec3f> noColors;
+    io::writeVector(out,noColors);
+
+    std::vector<vec3i> indices;
+    for (auto tri : mesh->triangles)
+      indices.push_back({tri.x,tri.y,tri.z});
+    for (auto quad : mesh->quads) {
+      indices.push_back({quad.x,quad.y,quad.z});
+      indices.push_back({quad.x,quad.z,quad.w});
+    }
+    io::writeVector(out,indices);
+    io::writeVector(out,mesh->perVertex->values);
+  }
+  
   UMesh::SP load(const std::string &fileName)
   {
     if (fileName.substr(fileName.size()-6) == ".umesh")
@@ -71,12 +95,14 @@ namespace umesh {
           outFileName = av[++i];
         else if (arg == "--obj")
           format = OBJ;
+        else if (arg == "--hsmesh")
+          format = HSMESH;
         else if (arg == "--umesh")
           format = UMESH;
         else if (arg[0] != '-')
           inFileName = arg;
         else {
-          throw std::runtime_error("./umeshDumpSurfaceMesh <in.umesh> [--obj|--umesh] -o <out.obj|.umesh>");
+          throw std::runtime_error("./umeshDumpSurfaceMesh <in.umesh> [--obj|--umesh|--hsmesh] -o <out.obj|.hsmesh|.umesh>");
         }
       }
 
@@ -95,6 +121,9 @@ namespace umesh {
       switch (format) {
       case OBJ:
         saveToOBJ(outFileName,outMesh);
+        break;
+      case HSMESH:
+        saveToHSMESH(outFileName,outMesh);
         break;
       case UMESH:
         outMesh->saveTo(outFileName);

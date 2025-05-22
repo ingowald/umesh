@@ -292,7 +292,7 @@ namespace umesh {
       {0,4}, {1,5}, {3,7}, {2,6}};
 
   struct FatVertex {
-    vec3f pos;
+    vec4f pos;
     uint32_t idx;
   };
 
@@ -309,7 +309,9 @@ namespace umesh {
       worry about vertex indexing later on */
   void process(std::vector<FatVertex> &out,
                const vec4f vertex[8],
-               const float isoValue)
+               const float isoValue,
+               /*! OPTIONAL array of mapped scalar; can be NULL */
+               const float mappedScalar[8])
   {
     int index = 0;
     for (int i=0;i<8;i++)
@@ -320,11 +322,17 @@ namespace umesh {
     for (const int8_t *edge = &vtkMarchingCubesTriangleCases[index][0];
          edge[0] > -1;
          edge += 3 ) {
-      vec3f triVertex[3];
+      vec4f triVertex[3];
       for (int ii=0; ii<3; ii++) {
         const int8_t *vert = vtkMarchingCubes_edges[edge[ii]];
-        const vec4f v0 = ((vertex[vert[0]]));
-        const vec4f v1 = ((vertex[vert[1]]));
+        vec4f v0 = ((vertex[vert[0]]));
+        vec4f v1 = ((vertex[vert[1]]));
+        float f0 = mappedScalar?mappedScalar[vert[0]]:INFINITY;
+        float f1 = mappedScalar?mappedScalar[vert[1]]:INFINITY;
+        if (v0 < v1) {
+          std::swap(v0,v1);
+          std::swap(f0,f1);
+        }
         const double t
           = (v1.w == v0.w)
           ? 0.f
@@ -333,6 +341,7 @@ namespace umesh {
         triVertex[ii].x = float((1.f-t)*v0.x+t*v1.x);
         triVertex[ii].y = float((1.f-t)*v0.y+t*v1.y);
         triVertex[ii].z = float((1.f-t)*v0.z+t*v1.z);
+        triVertex[ii].w = float((1.f-t)*f0  +t*f1);
       }
       
       if (triVertex[1] == triVertex[0]) continue;
@@ -349,36 +358,25 @@ namespace umesh {
   void process(std::vector<FatVertex> &out,
                UMesh::SP in,
                const UMesh::Tet &tet,
-               const float isoValue)
+               const float isoValue,
+               /*! OPTIONAL array of mapped scalar; can be empty */
+               const std::vector<float> &mappedScalar)
   {
     const vec4f a(in->vertices[tet.x],in->perVertex->values[tet.x]);
     const vec4f b(in->vertices[tet.y],in->perVertex->values[tet.y]);
     const vec4f c(in->vertices[tet.z],in->perVertex->values[tet.z]);
     const vec4f d(in->vertices[tet.w],in->perVertex->values[tet.w]);
     vec4f asHex[8] = { a,b,c,c, d,d,d,d };
-#if 0
-    float lo = min(min(a.w,b.w),min(c.w,d.w));
-    float hi = max(max(a.w,b.w),max(c.w,d.w));
-    if (isoValue >= lo && isoValue <= hi) {
-      out.push_back({vec3f(a),0});
-      out.push_back({vec3f(b),0});
-      out.push_back({vec3f(c),0});
-
-      out.push_back({vec3f(a),0});
-      out.push_back({vec3f(b),0});
-      out.push_back({vec3f(d),0});
-
-      out.push_back({vec3f(a),0});
-      out.push_back({vec3f(c),0});
-      out.push_back({vec3f(d),0});
-
-      out.push_back({vec3f(b),0});
-      out.push_back({vec3f(c),0});
-      out.push_back({vec3f(d),0});
+    if (mappedScalar.empty())
+      process(out,asHex,isoValue,nullptr);
+    else {
+      const float fa(mappedScalar[tet.x]);
+      const float fb(mappedScalar[tet.y]);
+      const float fc(mappedScalar[tet.z]);
+      const float fd(mappedScalar[tet.w]);
+      float hexMapped[8] = { fa,fb,fc,fc, fd,fd,fd,fd };
+      process(out,asHex,isoValue,hexMapped);
     }
-#else
-    process(out,asHex,isoValue);
-#endif
   }
 
   /*! blow a pyr up into a hex (by replicating vertices), then run MC
@@ -386,7 +384,9 @@ namespace umesh {
   void process(std::vector<FatVertex> &out,
                UMesh::SP in,
                const UMesh::Pyr &pyr,
-               const float isoValue)
+               const float isoValue,
+               /*! OPTIONAL array of mapped scalar; can be empty */
+               const std::vector<float> &mappedScalar)
   {
     const vec4f v0(in->vertices[pyr[0]],in->perVertex->values[pyr[0]]);
     const vec4f v1(in->vertices[pyr[1]],in->perVertex->values[pyr[1]]);
@@ -394,7 +394,17 @@ namespace umesh {
     const vec4f v3(in->vertices[pyr[3]],in->perVertex->values[pyr[3]]);
     const vec4f v4(in->vertices[pyr[4]],in->perVertex->values[pyr[4]]);
     vec4f asHex[8] = { v0,v1,v2,v3, v4,v4,v4,v4 };
-    process(out,asHex,isoValue);
+    if (mappedScalar.empty())
+      process(out,asHex,isoValue,nullptr);
+    else {
+      const float f0(mappedScalar[pyr[0]]);
+      const float f1(mappedScalar[pyr[1]]);
+      const float f2(mappedScalar[pyr[2]]);
+      const float f3(mappedScalar[pyr[3]]);
+      const float f4(mappedScalar[pyr[4]]);
+      float hexMapped[8] = { f0,f1,f2,f3, f4,f4,f4,f4 };
+      process(out,asHex,isoValue,hexMapped);
+    }
   }
   
   /*! blow a wedge up into a hex (by replicating vertices), then run MC
@@ -402,7 +412,9 @@ namespace umesh {
   void process(std::vector<FatVertex> &out,
                UMesh::SP in,
                const UMesh::Wedge &wedge,
-               const float isoValue)
+               const float isoValue,
+               /*! OPTIONAL array of mapped scalar; can be empty */
+               const std::vector<float> &mappedScalar)
   {
     const vec4f v0(in->vertices[wedge[0]],in->perVertex->values[wedge[0]]);
     const vec4f v1(in->vertices[wedge[1]],in->perVertex->values[wedge[1]]);
@@ -411,7 +423,19 @@ namespace umesh {
     const vec4f v4(in->vertices[wedge[4]],in->perVertex->values[wedge[4]]);
     const vec4f v5(in->vertices[wedge[5]],in->perVertex->values[wedge[5]]);
     vec4f asHex[8] = { v0,v1,v4,v3,v2,v2,v5,v5 };
-    process(out,asHex,isoValue);
+    if (mappedScalar.empty())
+      process(out,asHex,isoValue,nullptr);
+    else {
+      const float f0(mappedScalar[wedge[0]]);
+      const float f1(mappedScalar[wedge[1]]);
+      const float f2(mappedScalar[wedge[2]]);
+      const float f3(mappedScalar[wedge[3]]);
+      const float f4(mappedScalar[wedge[4]]);
+      const float f5(mappedScalar[wedge[5]]);
+      float hexMapped[8] = { f0,f1,f4,f3, f2,f2,f5,f5 };
+      process(out,asHex,isoValue,hexMapped);
+    }
+    // process(out,asHex,isoValue);
   }
   
   /*! convert our hex representation to 8x{vec3f+scalar}, then run MC
@@ -419,7 +443,9 @@ namespace umesh {
   void process(std::vector<FatVertex> &out,
                UMesh::SP in,
                const UMesh::Hex &hex,
-               const float isoValue)
+               const float isoValue,
+               /*! OPTIONAL array of mapped scalar; can be empty */
+               const std::vector<float> &mappedScalar)
   {
     const vec4f v0(in->vertices[hex[0]],in->perVertex->values[hex[0]]);
     const vec4f v1(in->vertices[hex[1]],in->perVertex->values[hex[1]]);
@@ -430,7 +456,21 @@ namespace umesh {
     const vec4f v6(in->vertices[hex[6]],in->perVertex->values[hex[6]]);
     const vec4f v7(in->vertices[hex[7]],in->perVertex->values[hex[7]]);
     vec4f asHex[8] = { v0,v1,v2,v3,v4,v5,v6,v7 };
-    process(out,asHex,isoValue);
+    if (mappedScalar.empty())
+      process(out,asHex,isoValue,nullptr);
+    else {
+      const float f0(mappedScalar[hex[0]]);
+      const float f1(mappedScalar[hex[1]]);
+      const float f2(mappedScalar[hex[2]]);
+      const float f3(mappedScalar[hex[3]]);
+      const float f4(mappedScalar[hex[4]]);
+      const float f5(mappedScalar[hex[5]]);
+      const float f6(mappedScalar[hex[6]]);
+      const float f7(mappedScalar[hex[7]]);
+      float hexMapped[8] = { f0,f1,f2,f3, f4,f5,f6,f7 };
+      process(out,asHex,isoValue,hexMapped);
+    }
+    // process(out,asHex,isoValue);
   }
   
   void doIsoSurfacePyrs(std::vector<FatVertex> &out,
@@ -438,11 +478,13 @@ namespace umesh {
                         UMesh::SP in,
                         size_t begin,
                         size_t end,
-                        const float isoValue)
+                        const float isoValue,
+                        /*! OPTIONAL array of mapped scalar; can be empty */
+                        const std::vector<float> &mappedScalars)
   {
     std::vector<FatVertex> localVertices;
     for (size_t i=begin;i<end;i++)
-      process(localVertices,in,in->pyrs[i],isoValue);
+      process(localVertices,in,in->pyrs[i],isoValue,mappedScalars);
 
     std::lock_guard<std::mutex> lock(mutex);
     std::copy(localVertices.begin(),
@@ -454,11 +496,13 @@ namespace umesh {
                           UMesh::SP in,
                           size_t begin,
                           size_t end,
-                          const float isoValue)
+                          const float isoValue,
+                        /*! OPTIONAL array of mapped scalar; can be empty */
+                        const std::vector<float> &mappedScalars)
   {
     std::vector<FatVertex> localVertices;
     for (size_t i=begin;i<end;i++)
-      process(localVertices,in,in->wedges[i],isoValue);
+      process(localVertices,in,in->wedges[i],isoValue,mappedScalars);
 
     std::lock_guard<std::mutex> lock(mutex);
     std::copy(localVertices.begin(),
@@ -470,11 +514,13 @@ namespace umesh {
                          UMesh::SP in,
                          size_t begin,
                          size_t end,
-                         const float isoValue)
+                         const float isoValue,
+                        /*! OPTIONAL array of mapped scalar; can be empty */
+                        const std::vector<float> &mappedScalars)
   {
     std::vector<FatVertex> localVertices;
     for (size_t i=begin;i<end;i++)
-      process(localVertices,in,in->hexes[i],isoValue);
+      process(localVertices,in,in->hexes[i],isoValue,mappedScalars);
 
     std::lock_guard<std::mutex> lock(mutex);
     std::copy(localVertices.begin(),
@@ -487,11 +533,13 @@ namespace umesh {
                         UMesh::SP in,
                         size_t begin,
                         size_t end,
-                        const float isoValue)
+                        const float isoValue,
+                        /*! OPTIONAL array of mapped scalar; can be empty */
+                        const std::vector<float> &mappedScalar)
   {
     std::vector<FatVertex> localVertices;
     for (size_t i=begin;i<end;i++)
-      process(localVertices,in,in->tets[i],isoValue);
+      process(localVertices,in,in->tets[i],isoValue,mappedScalar);
 
     std::lock_guard<std::mutex> lock(mutex);
     std::copy(localVertices.begin(),
@@ -505,12 +553,16 @@ namespace umesh {
     scalar field, but can have any combinatoin of volumetric
     elemnets; tris and quads in the input get ignored; input remains
     unchanged. */
-  UMesh::SP extractIsoSurface(UMesh::SP in, float isoValue)
+  UMesh::SP extractIsoSurface(UMesh::SP in,
+                              float isoValue,
+                              const std::vector<float> &mappedScalars)
   {
     if (!in) throw std::runtime_error("null input mesh");
     if (!in->perVertex) throw std::runtime_error("input mesh w/o scalar field");
     
     UMesh::SP out = std::make_shared<UMesh>();
+    if (mappedScalars.size() > 0)
+      out->perVertex = std::make_shared<Attribute>();
     std::mutex mutex;
 
     std::vector<FatVertex> fatVertices;
@@ -521,7 +573,7 @@ namespace umesh {
     parallel_for_blocked
       (0,in->tets.size(),1024,
        [&](size_t begin, size_t end){
-        doIsoSurfaceTets(fatVertices,mutex,in,begin,end,isoValue);
+         doIsoSurfaceTets(fatVertices,mutex,in,begin,end,isoValue,mappedScalars);
       });
 
 #if 1
@@ -531,7 +583,7 @@ namespace umesh {
     parallel_for_blocked
       (0,in->pyrs.size(),1024,
        [&](size_t begin, size_t end){
-        doIsoSurfacePyrs(fatVertices,mutex,in,begin,end,isoValue);
+         doIsoSurfacePyrs(fatVertices,mutex,in,begin,end,isoValue,mappedScalars);
       });
 
     if (verbose)
@@ -540,7 +592,7 @@ namespace umesh {
     parallel_for_blocked
       (0,in->wedges.size(),1024,
        [&](size_t begin, size_t end){
-        doIsoSurfaceWedges(fatVertices,mutex,in,begin,end,isoValue);
+        doIsoSurfaceWedges(fatVertices,mutex,in,begin,end,isoValue,mappedScalars);
       });
 
     if (verbose)
@@ -549,7 +601,7 @@ namespace umesh {
     parallel_for_blocked
       (0,in->hexes.size(),1024,
        [&](size_t begin, size_t end){
-        doIsoSurfaceHexes(fatVertices,mutex,in,begin,end,isoValue);
+        doIsoSurfaceHexes(fatVertices,mutex,in,begin,end,isoValue,mappedScalars);
       });
 #endif
     const int numFatVertices = (int)fatVertices.size();
@@ -570,15 +622,19 @@ namespace umesh {
       if ((i==0) || (fatVertices[i].pos != fatVertices[i-1].pos))
         ++numUniqueVertices;
     if (verbose)
-    std::cout << "#umesh.iso: found " << prettyNumber(numUniqueVertices) << " unique vertices ..." << std::endl;
+      std::cout << "#umesh.iso: found " << prettyNumber(numUniqueVertices) << " unique vertices ..." << std::endl;
     out->triangles.resize(numFatVertices/3);
     out->vertices.resize(numUniqueVertices);
+    if (out->perVertex)
+      out->perVertex->values.resize(numUniqueVertices);
     int uniqueVertexID = -1;
     for (int i=0;i<numFatVertices;i++) {
       const auto &vtx = fatVertices[i];
       if (i==0 || vtx.pos != fatVertices[i-1].pos) {
         ++uniqueVertexID;
-        out->vertices[uniqueVertexID] = vtx.pos;
+        out->vertices[uniqueVertexID] = (const vec3f&)vtx.pos;
+        if (out->perVertex)
+          out->perVertex->values[uniqueVertexID] = vtx.pos.w;
       }
       /* this line assumes that every triangle is three ints - make
          sure that's the case! */

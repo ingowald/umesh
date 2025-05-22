@@ -33,6 +33,8 @@ namespace umesh {
   {
     float isoValue = std::numeric_limits<float>::infinity();
     std::string inFileName;
+    std::string isoScalarsFileName;
+    std::string mappedScalarsFileName;
     std::string outFileName;
     std::string objFileName;
     /*! if enabled, we'll only save the tets that _we_ created, not
@@ -43,7 +45,11 @@ namespace umesh {
         usage();
       else if (arg == "-o")
         outFileName = av[++i];
-      else if (arg == "-iso" || arg == "--iso-value" || arg == "--iso")
+      else if (arg == "-ms" || arg == "--mapped-scalars")
+        mappedScalarsFileName = av[++i];
+      else if (arg == "-is" || arg == "--iso-scalars")
+        isoScalarsFileName = av[++i];
+      } else if (arg == "-iv" || arg == "--iso-value" || arg == "--iso")
         isoValue = std::stof(av[++i]);
       else if (arg == "--obj")
         objFileName = av[++i];
@@ -61,7 +67,13 @@ namespace umesh {
     
     std::cout << "loading umesh from " << inFileName << std::endl;
     UMesh::SP in = UMesh::loadFrom(inFileName);
-    
+    if (!isoScalarsFileName.empty())
+      in->perVertex->values = io::wholeFile::readVectorOf<float>(isoScalarsFileName);
+    std::vector<float> mappedScalars;
+    if (!mappedScalarsFileName.empty())
+      mappedScalars = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
+
+
     std::cout << "done loading, found " << in->toString()
               << " ... now extracting iso-surface" << std::endl;
     if (in->pyrs.empty() &&
@@ -74,7 +86,7 @@ namespace umesh {
       std::cout << UMESH_TERMINAL_DEFAULT << std::endl;
     }
     
-    UMesh::SP result = extractIsoSurface(in,isoValue);
+    UMesh::SP result = extractIsoSurface(in,isoValue,mappedScalars);
     std::cout << "done extracting isovalue, found " << result->toString() << std::endl;
     if (outFileName != "") {
       std::cout << "saving to " << outFileName << std::endl;
