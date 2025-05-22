@@ -18,6 +18,21 @@
 #include "umesh/io/UMesh.h"
 #include "umesh/extractIsoSurface.h"
 
+#ifndef PRINT
+#ifdef __CUDA_ARCH__
+# define PRINT(va) /**/
+# define PING /**/
+#else
+# define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
+#else
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+#endif
+#endif
+#endif
+
+
 namespace umesh {
 
   void usage(const std::string error="")
@@ -67,8 +82,11 @@ namespace umesh {
     
     std::cout << "loading umesh from " << inFileName << std::endl;
     UMesh::SP in = UMesh::loadFrom(inFileName);
-    if (!isoScalarsFileName.empty())
+    PING; PRINT(in->perVertex);
+    if (!isoScalarsFileName.empty()) {
+      in->perVertex = std::make_shared<Attribute>();
       in->perVertex->values = io::wholeFile::readVectorOf<float>(isoScalarsFileName);
+    }
     std::vector<float> mappedScalars;
     if (!mappedScalarsFileName.empty())
       mappedScalars = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
@@ -90,6 +108,7 @@ namespace umesh {
     std::cout << "done extracting isovalue, found " << result->toString() << std::endl;
     if (outFileName != "") {
       std::cout << "saving to " << outFileName << std::endl;
+      result->finalize();
       result->saveTo(outFileName);
     }
     if (objFileName != "") {
