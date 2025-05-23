@@ -38,7 +38,7 @@ namespace umesh {
     std::string outFileName;
     std::string objFileName;
     /*! if enabled, we'll only save the tets that _we_ created, not
-        those that were in the file initially */
+      those that were in the file initially */
     for (int i=1;i<ac;i++) {
       const std::string arg = av[i];
       if (arg == "-h")
@@ -49,7 +49,7 @@ namespace umesh {
         mappedScalarsFileName = av[++i];
       else if (arg == "-is" || arg == "--iso-scalars")
         isoScalarsFileName = av[++i];
-      } else if (arg == "-iv" || arg == "--iso-value" || arg == "--iso")
+      else if (arg == "-iv" || arg == "--iso-value" || arg == "--iso")
         isoValue = std::stof(av[++i]);
       else if (arg == "--obj")
         objFileName = av[++i];
@@ -59,9 +59,10 @@ namespace umesh {
         usage("unknown cmd-line arg '"+arg+"'");
     }
     
-    if (inFileName == "") usage("no input file specified");
-    if (outFileName == "" && objFileName == "") usage("neither obj nor umesh output file specified");
-    
+    if (inFileName == "")
+      usage("no input file specified");
+    if (outFileName == "" && objFileName == "")
+      usage("neither obj nor umesh output file specified");
     if (isoValue == std::numeric_limits<float>::infinity())
       usage("no iso-value specified");
     
@@ -73,6 +74,10 @@ namespace umesh {
     if (!mappedScalarsFileName.empty())
       mappedScalars = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
 
+    if (mappedScalars.size() != in->perVertex->values.size())
+      throw std::runtime_error("mapped scalars size doesn't match per vertex scalars.size");
+    if (in->vertices.size() != in->perVertex->values.size())
+      throw std::runtime_error("vertices size doesn't match per vertex scalars.size");
 
     std::cout << "done loading, found " << in->toString()
               << " ... now extracting iso-surface" << std::endl;
