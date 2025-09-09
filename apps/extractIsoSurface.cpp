@@ -92,7 +92,10 @@ namespace umesh {
       in->perVertex->values = io::wholeFile::readVectorOf<float>(isoScalarsFileName);
     }
     std::vector<float> mappedScalars;
-    if (mappedScalarsFileName == "!y") {
+    if (mappedScalarsFileName == ":y") {
+      for (auto v : in->vertices)
+        mappedScalars.push_back(v.y);
+    } else if (mappedScalarsFileName == ":z") {
       for (auto v : in->vertices)
         mappedScalars.push_back(v.z);
     } else
