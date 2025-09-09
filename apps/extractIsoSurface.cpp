@@ -52,6 +52,8 @@ namespace umesh {
     std::string mappedScalarsFileName;
     std::string outFileName;
     std::string objFileName;
+    std::string npFilePrefix;
+    
     /*! if enabled, we'll only save the tets that _we_ created, not
       those that were in the file initially */
     for (int i=1;i<ac;i++) {
@@ -59,6 +61,8 @@ namespace umesh {
       if (arg == "-h")
         usage();
       else if (arg == "-o")
+        npFilePrefix = av[++i];
+      else if (arg == "-o:np")
         outFileName = av[++i];
       else if (arg == "-ms" || arg == "--mapped-scalars")
         mappedScalarsFileName = av[++i];
@@ -76,7 +80,7 @@ namespace umesh {
     
     if (inFileName == "")
       usage("no input file specified");
-    if (outFileName == "" && objFileName == "")
+    if (outFileName == "" && objFileName == "" && npFilePrefix == "")
       usage("neither obj nor umesh output file specified");
     if (isoValue == std::numeric_limits<float>::infinity())
       usage("no iso-value specified");
@@ -111,6 +115,25 @@ namespace umesh {
     
     UMesh::SP result = extractIsoSurface(in,isoValue,mappedScalars);
     std::cout << "done extracting isovalue, found " << result->toString() << std::endl;
+    if (npFilePrefix != "") {
+      std::cout << "writing in raw numpy arrays format to " << npFilePrefix
+                << "{.vertex_coords.f3,.vertex_scalar.f1,.triangle_indices.i3}" << std::endl;
+      if (!in->perVertex)
+        throw std::runtime_error("no color mapping variable specified");
+      std::cout << UMESH_TERMINAL_RED << "# WARNING - this can take a while!"
+                << UMESH_TERMINAL_DEFAULT << std::endl;
+      std::ofstream vertices(npFilePrefix+".vertex_coords.f3");
+      std::ofstream scalars(npFilePrefix+".vertex_scalars.f1");
+      std::ofstream indices(npFilePrefix+".triangle_indices.i3");
+      for (auto t : result->triangles) 
+        indices.write((const char *)&t,3*sizeof(int));
+      for (int i=0;i<result->vertices.size();i++) {
+        vec3f v = result->vertices[i];
+        vertices.write((const char *)&v,sizeof(v));
+        float f = in->perVertex->values[i];
+        scalars.write((const char *)&f,sizeof(f));
+      }
+    }
     if (outFileName != "") {
       std::cout << "saving to " << outFileName << std::endl;
       result->finalize();
