@@ -61,9 +61,9 @@ namespace umesh {
       if (arg == "-h")
         usage();
       else if (arg == "-o")
-        npFilePrefix = av[++i];
-      else if (arg == "-o:np")
         outFileName = av[++i];
+      else if (arg == "-o:np")
+        npFilePrefix = av[++i];
       else if (arg == "-ms" || arg == "--mapped-scalars")
         mappedScalarsFileName = av[++i];
       else if (arg == "-is" || arg == "--iso-scalars")
@@ -87,7 +87,6 @@ namespace umesh {
     
     std::cout << "loading umesh from " << inFileName << std::endl;
     UMesh::SP in = UMesh::loadFrom(inFileName);
-    PING; PRINT(in->perVertex);
     if (!isoScalarsFileName.empty()) {
       in->perVertex = std::make_shared<Attribute>();
       in->perVertex->values = io::wholeFile::readVectorOf<float>(isoScalarsFileName);
