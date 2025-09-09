@@ -92,11 +92,19 @@ namespace umesh {
       in->perVertex->values = io::wholeFile::readVectorOf<float>(isoScalarsFileName);
     }
     std::vector<float> mappedScalars;
-    if (!mappedScalarsFileName.empty())
-      mappedScalars = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
+    if (mappedScalarsFileName == "!y") {
+      for (auto v : in->vertices)
+        mappedScalars.push_back(v.z);
+    } else
+      if (!mappedScalarsFileName.empty())
+        mappedScalars = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
 
-    if (mappedScalars.size() != in->perVertex->values.size())
-      throw std::runtime_error("mapped scalars size doesn't match per vertex scalars.size");
+    if (mappedScalarsFileName.empty())
+      std::cout << "no mapping of any scalar to egnerated iso-surface" << std::endl;
+    else {
+      if (mappedScalars.size() != in->perVertex->values.size())
+        throw std::runtime_error("mapped scalars size doesn't match per vertex scalars.size");
+    }
     if (in->vertices.size() != in->perVertex->values.size())
       throw std::runtime_error("vertices size doesn't match per vertex scalars.size");
 

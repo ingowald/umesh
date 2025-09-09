@@ -73,6 +73,17 @@ target_link_libraries(umeshExportBBs
 
 
 # ------------------------------------------------------------------
+# import a RAW *structured* mesh as if it was a umesh with hexes
+# ------------------------------------------------------------------
+add_executable(umeshImportStructured
+  importStructured.cpp
+  )
+target_link_libraries(umeshImportStructured
+  PUBLIC
+  umesh
+  )
+
+  # ------------------------------------------------------------------
 # import a OFF file to umesh format
 # ------------------------------------------------------------------
 add_executable(umeshImportUGrid64
