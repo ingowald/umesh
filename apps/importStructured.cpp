@@ -116,8 +116,6 @@ namespace umesh {
     vec3i my_begin = (brickIndex * (dims-vec3i(1))) / brickCount;
     vec3i my_end = ((brickIndex+vec3i(1)) * (dims-vec3i(1))) / brickCount;
 
-    PRINT(my_begin);
-    PRINT(my_end);
     UMesh::SP umesh = std::make_shared<UMesh>();
     umesh->perVertex = std::make_shared<Attribute>();
     std::cout << "generating vertices" << std::endl;
@@ -135,8 +133,6 @@ namespace umesh {
       }
     std::cout << "generating hexes" << std::endl;
     vec3i my_dims = my_end - my_begin + 1;
-    PRINT(my_dims.x*my_dims.y*my_dims.z);
-    PRINT(umesh->vertices.size());
     for (int64_t iz=0;iz<my_dims.z-1;iz++)
       for (int64_t iy=0;iy<my_dims.y-1;iy++)
         for (int64_t ix=0;ix<my_dims.x-1;ix++) {
