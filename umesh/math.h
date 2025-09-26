@@ -58,17 +58,37 @@
 #include <limits>
 #include <utility>
 #include <vector>
+#include <algorithm>
+#include <limits.h>
+#include <cstdint>
 
+#if (!defined(__umesh_both__))
+# if defined(__CUDA_ARCH__)
+#  define __umesh_device   __device__
+#  define __umesh_host     __host__
+# else
+#  define __umesh_device   /* ignore */
+#  define __umesh_host     /* ignore */
+# endif
+# define __umesh_both__   __umesh_host __umesh_device
+#endif
+  
 namespace umesh {
   struct range1f {
     range1f including(const float f) const;
     void extend(float f);
     void extend(const range1f &other);
-    float lower, upper;
+    inline bool empty() const { return upper < lower; }
+    float lower = +FLT_MAX, upper = -FLT_MAX;
   };
   
   inline range1f range1f::including(const float f) const
-  { return { std::min(lower,f),std::max(upper,f) }; }
+  {
+    range1f res;
+    res.lower = std::min(lower,f);
+    res.upper = std::max(upper,f);
+    return res;
+  }
   // inline range1f range1f::including(const range1f &other) const
   // { return { std::min(lower,other,lower),std::max(upper,other.upper) }; }
   
@@ -83,6 +103,8 @@ namespace umesh {
     upper = std::max(upper,other.upper);
   }
 
+  struct vec3i;
+  
   /*! namespace for syntax-only parser - this allows to distringuish
     high-level objects such as shapes from objects or transforms,
     but does *not* make any difference between what types of
@@ -100,6 +122,7 @@ namespace umesh {
     typedef float scalar_t;
     vec3f() = default;
     explicit vec3f(float v) : x{v}, y{v}, z{v} { }
+    explicit vec3f(const vec3i &);
     vec3f(float x, float y, float z) : x{x}, y{y}, z{z} { }
     inline float &operator[](int i) { return (&x)[i]; }
     inline const float &operator[](int i) const { return (&x)[i]; }
@@ -111,6 +134,8 @@ namespace umesh {
     vec4f(float v) : x{v}, y{v}, z{v}, w{v} { }
     vec4f(vec3f v, float w) : x{v.x}, y{v.y}, z{v.z}, w{w} { }
     vec4f(float x, float y, float z, float w) : x{x}, y{y}, z{z}, w{w} { }
+    inline float &operator[](int i) { return (&x)[i]; }
+    inline const float &operator[](int i) const { return (&x)[i]; }
     float x, y, z, w;
   };
   struct vec2i {
@@ -123,7 +148,7 @@ namespace umesh {
   struct vec3i {
     int x, y, z;
     vec3i() = default;
-    explicit vec3i(int v) : x{v}, y{v}, z{v} { }
+    vec3i(int v) : x{v}, y{v}, z{v} { }
     vec3i(int x, int y, int z) : x{x}, y{y}, z{z} { }
     typedef int scalar_t;
     inline int &operator[](int i) { return (&x)[i]; }
@@ -163,10 +188,25 @@ namespace umesh {
     static box3f empty_box() { return box3f(vec3f(FLT_MAX), vec3f(-FLT_MAX)); }
     box3f including(const vec3f &other) const;
     bool overlaps(const box3f &other) const;
+    bool contains(const vec3f &t) const;
     void extend(const vec3f& a);
     void extend(const box3f& a);
     vec3f size() const;
     vec3f center() const;
+  };
+  struct box3i {
+    vec3i lower, upper;
+    box3i() : lower(INT_MAX), upper(INT_MIN) {}//= default;
+    box3i(const vec3i& lower, const vec3i& upper) : lower{lower}, upper{upper} { }
+    inline bool  empty()  const
+    { return (upper.x < lower.x) || (upper.y < lower.y) || (upper.z < lower.z); }
+    static box3i empty_box() { return box3i(vec3i(INT_MAX), vec3i(INT_MIN)); }
+    box3i including(const vec3i &other) const;
+    bool overlaps(const box3i &other) const;
+    void extend(const vec3i& a);
+    void extend(const box3i& a);
+    vec3i size() const;
+    vec3i center() const;
   };
   struct box4f {
     vec4f lower, upper;
@@ -185,6 +225,9 @@ namespace umesh {
   inline vec3f operator-(const vec3f& a) { return vec3f(-a.x, -a.y, -a.z); }
   inline vec3f operator-(const vec3f& a, const vec3f& b) { return vec3f(a.x - b.x, a.y - b.y, a.z - b.z); }
   inline vec3f operator+(const vec3f& a, const vec3f& b) { return vec3f(a.x + b.x, a.y + b.y, a.z + b.z); }
+  inline vec4f operator+(const vec4f& a, const vec4f& b) { return vec4f(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
+  inline vec3f operator/(const vec3f& a, const vec3f& b) { return vec3f(a.x / b.x, a.y / b.y, a.z / b.z); }
+
   inline vec3f operator*(const vec3f& a, float b) { return vec3f(a.x * b, a.y * b, a.z * b); }
   inline vec3f operator*(float a, const vec3f& b) { return vec3f(a * b.x, a * b.y, a * b.z); }
   inline vec3f operator*(const vec3f& a, const vec3f& b) { return vec3f(a.x * b.x, a.y * b.y, a.z * b.z); }
@@ -192,6 +235,20 @@ namespace umesh {
   inline vec3f operator*(const mat3f& a, const vec3f& b) { return a.vx * b.x + a.vy * b.y + a.vz * b.z; }
   inline mat3f operator*(const mat3f& a, const mat3f& b) { return mat3f(a * b.vx, a * b.vy, a * b.vz); }
   inline vec3f operator*(const affine3f& a, const vec3f& b) { return a.l * b + a.p; }
+
+
+  inline vec3i operator-(const vec3i& a) { return vec3i(-a.x, -a.y, -a.z); }
+  inline vec3i operator-(const vec3i& a, const vec3i& b) { return vec3i(a.x - b.x, a.y - b.y, a.z - b.z); }
+  inline vec3i operator+(const vec3i& a, const vec3i& b) { return vec3i(a.x + b.x, a.y + b.y, a.z + b.z); }
+  inline vec3i operator*(const vec3i& a, int b) { return vec3i(a.x * b, a.y * b, a.z * b); }
+  inline vec3i operator*(int a, const vec3i& b) { return vec3i(a * b.x, a * b.y, a * b.z); }
+  inline vec3i operator*(const vec3i& a, const vec3i& b) { return vec3i(a.x * b.x, a.y * b.y, a.z * b.z); }
+  inline vec3i operator>>(const vec3i& a, int b) { return vec3i(a.x>>b, a.y>>b, a.z>>b); }
+  inline vec3i operator/(const vec3i& a, int b) { return vec3i(a.x/b, a.y/b, a.z/b); }
+  inline vec3i operator/(int a, const vec3i& b) { return vec3i(a / b.x, a / b.y, a / b.z); }
+  inline vec3i operator/(const vec3i& a, const vec3i& b) { return vec3i(a.x / b.x, a.y / b.y, a.z / b.z); }
+
+
   inline affine3f operator*(const affine3f& a, const affine3f& b) { return affine3f(a.l * b.l, a.l * b.p + a.p); }
 
   inline float dot(const vec3f& a, const vec3f& b) { return a.x*b.x+a.y*b.y+a.z*b.z; }
@@ -208,6 +265,9 @@ namespace umesh {
   inline vec3f xfmPoint(const affine3f& m, const vec3f& p) { return m * p; }
   inline vec3f xfmVector(const affine3f& m, const vec3f& v) { return m.l * v; }
   inline vec3f xfmNormal(const affine3f& m, const vec3f& n) { return inverse_transpose(m.l) * n; }
+
+  inline vec4f operator*(const vec4f& a, const vec4f& b) { return vec4f(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
+
 
   inline affine3f affine3f::rotate(const vec3f& _u, float r) {
     vec3f u = normalize(_u);
@@ -245,10 +305,16 @@ namespace umesh {
   { return std::min(std::min(v.x,v.y),v.z); }
   inline float max(float a, float b) { return a<b ? b:a; }
   inline float min(float a, float b) { return a>b ? b:a; }
+  inline int max(int a, int b) { return a<b ? b:a; }
+  inline int min(int a, int b) { return a>b ? b:a; }
   inline vec3f max(const vec3f& a, const vec3f& b) { return vec3f(max(a.x,b.x),max(a.y,b.y),max(a.z,b.z)); }
   inline vec3f min(const vec3f& a, const vec3f& b) { return vec3f(min(a.x,b.x),min(a.y,b.y),min(a.z,b.z)); }
+  inline vec3i max(const vec3i& a, const vec3i& b) { return vec3i(max(a.x,b.x),max(a.y,b.y),max(a.z,b.z)); }
+  inline vec3i min(const vec3i& a, const vec3i& b) { return vec3i(min(a.x,b.x),min(a.y,b.y),min(a.z,b.z)); }
   inline void box3f::extend(const vec3f& p) { lower=min(lower,p); upper=max(upper,p); }
+  inline void box3i::extend(const vec3i& p) { lower=min(lower,p); upper=max(upper,p); }
   inline void box3f::extend(const box3f& b) { lower=min(lower,b.lower); upper=max(upper,b.upper); }
+  inline void box3i::extend(const box3i& b) { lower=min(lower,b.lower); upper=max(upper,b.upper); }
 
   inline bool box3f::overlaps(const box3f &other) const
   {
@@ -256,30 +322,44 @@ namespace umesh {
       !(lower.x > other.upper.x) &&
       !(lower.y > other.upper.y) &&
       !(lower.z > other.upper.z) &&
-      !(upper.x > other.lower.x) &&
-      !(upper.y > other.lower.y) &&
-      !(upper.z > other.lower.z);
+      !(upper.x < other.lower.x) &&
+      !(upper.y < other.lower.y) &&
+      !(upper.z < other.lower.z);
+  }
+
+  inline bool box3f::contains(const vec3f &t) const
+  {
+    return (t.x >= lower.x && t.x <= upper.x) &&
+           (t.y >= lower.y && t.y <= upper.y) &&
+           (t.z >= lower.z && t.z <= upper.z);
   }
 
   inline int divRoundUp(int a, int b) { return (a+b-1)/b; }
+  inline size_t divRoundUp(size_t a, size_t b) { return (a + b - 1) / b; }
   inline box3f intersection(const box3f &a, const box3f &b)
   { return {max(a.lower,b.lower),min(a.upper,b.upper)}; }
   inline box3f box3f::including(const vec3f &other) const
   { return box3f{min(lower,other),max(upper,other)}; }
   inline vec3f box3f::size() const { return upper - lower; }
+  inline vec3i box3i::size() const { return upper - lower; }
   inline vec3f box3f::center() const { return 0.5f*(lower+upper); }
 
   inline std::ostream& operator<<(std::ostream& o, const range1f& v) { return o << "[" << v.lower << ".." << v.upper << "]"; }
   inline std::ostream& operator<<(std::ostream& o, const vec2f& v) { return o << "(" << v.x << "," << v.y << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const vec3f& v) { return o << "(" << v.x << "," << v.y << "," << v.z << ")"; }
+  inline std::ostream& operator<<(std::ostream& o, const vec3i& v) { return o << "(" << v.x << "," << v.y << "," << v.z << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const vec4f& v) { return o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const vec2i& v) { return o << "(" << v.x << "," << v.y << ")"; }
-  inline std::ostream& operator<<(std::ostream& o, const vec3i& v) { return o << "(" << v.x << "," << v.y << "," << v.z << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const vec4i& v) { return o << "(" << v.x << "," << v.y << "," << v.z << "," << v.w << ")"; }
   inline std::ostream& operator<<(std::ostream& o, const mat3f& m) { return o << "{ vx = " << m.vx << ", vy = " << m.vy << ", vz = " << m.vz << "}"; }
   inline std::ostream& operator<<(std::ostream& o, const affine3f& m) { return o << "{ l = " << m.l << ", p = " << m.p << " }"; }
   inline std::ostream& operator<<(std::ostream &o, const box3f& b) { return o << "[" << b.lower <<":"<<b.upper<<"]"; }
+  inline std::ostream& operator<<(std::ostream &o, const box3i& b) { return o << "[" << b.lower <<":"<<b.upper<<"]"; }
 
+  inline bool operator==(const vec2f &a, const vec2f &b)
+  { return a.x==b.x && a.y==b.y; }
+  inline bool operator!=(const vec2f &a, const vec2f &b)
+  { return !(a.x==b.x && a.y==b.y); }
   inline bool operator==(const vec3f &a, const vec3f &b)
   { return a.x==b.x && a.y==b.y && a.z==b.z; }
   inline bool operator!=(const vec3f &a, const vec3f &b)
@@ -288,13 +368,44 @@ namespace umesh {
   { return a.x==b.x && a.y==b.y && a.z==b.z; }
   inline bool operator!=(const vec3i &a, const vec3i &b)
   { return !(a.x==b.x && a.y==b.y && a.z==b.z); }
+  
+  inline bool operator==(const vec4f &a, const vec4f &b)
+  { return a.x==b.x && a.y==b.y && a.z==b.z && a.w==b.w; }
+  inline bool operator!=(const vec4f &a, const vec4f &b)
+  { return !(a.x==b.x && a.y==b.y && a.z==b.z && a.w==b.w); }
+  
   inline bool operator<(const vec3f &a, const vec3f &b)
   {
     return (a.x<b.x) || ((a.x==b.x) && ((a.y<b.y) || ((a.y==b.y) && (a.z<b.z))));
   }
   inline bool operator<(const vec3i &a, const vec3i &b)
   {
-    return (a.x<b.x) || ((a.x==b.x) && ((a.y<b.y) || ((a.y==b.y) && (a.z<b.z))));
+#if 1
+    const uint64_t la = (const uint64_t &)a;
+    const uint64_t lb = (const uint64_t &)b;
+    return ((la < lb) || (la==lb && (const uint32_t&)a.z < (const uint32_t&)b.z));
+#else
+    return
+      (a.x<b.x) ||
+      (a.x==b.x && a.y<b.y) ||
+      (a.x==b.x && a.y==b.y && a.z<b.z);
+#endif
+  }
+  inline bool operator<(const vec4i &a, const vec4i &b)
+  {
+    return
+      (a.x<b.x) ||
+      (a.x==b.x && a.y<b.y) ||
+      (a.x==b.x && a.y==b.y && a.z<b.z) ||
+      (a.x==b.x && a.y==b.y && a.z==b.z && a.w<b.w);
+  }
+  inline bool operator<(const vec4f &a, const vec4f &b)
+  {
+    return
+      (a.x<b.x) ||
+      (a.x==b.x && a.y<b.y) ||
+      (a.x==b.x && a.y==b.y && a.z<b.z) ||
+      (a.x==b.x && a.y==b.y && a.z==b.z && a.w<b.w);
   }
 
 
@@ -339,5 +450,9 @@ namespace umesh {
     return result;
   }
 #undef osp_snprintf
+  
+  inline vec3f::vec3f(const vec3i &v) : x{(float)v.x}, y{(float)v.y}, z{(float)v.z} { }
+
+  inline float length(const vec3f &v) { return sqrtf(dot(v,v)); }
 
 } // ::pbrt

@@ -24,16 +24,32 @@ namespace umesh {
     the duplicates and translating the input meshes' vertices to the
     new mesh's vertex indices */
   struct RemeshHelper {
-    RemeshHelper(UMesh &target);
+    RemeshHelper(UMesh &target,
+                 /*! if on, we will create a 'vertexTag' array in the
+                     output even if it does not exist yet */
+                 bool createVertexTags = 0);
 
+    /*! find ID of given vertex in target mesh (if it already exists),a
+      nd return it; otherwise add vertex to target mesh, and return
+      new ID */
+    uint32_t getID(const vec3f &v);
+    
     /*! given a vertex v, return its ID in the target mesh's vertex
       array (if present), or add it (if not). To afterwards allow the
       using libnray to look up which of the inptu vertices ended up
       where we also allow to specify a vertex "tag" for each input
       vertices. meshes should only ever get built with *either* this
       functoin of the one that uses a float scalar, not mixed */
-    uint32_t getID(const vec3f &v, size_t tag=0);
+    uint32_t getID(const vec3f &v, size_t tag);
 
+    /*! given a vertex v, associated per-vertex scalar value s, and a
+      _pre-existing_ vertex tag, check if this vertex was already
+      added, and return its vertex ID if so; else add with existing
+      scalar and tag. */
+    uint32_t getID(const vec3f &v,
+                   float scalar,
+                   size_t existingVertexTag);
+    
     /*! given a vertex v and associated per-vertex scalar value s,
       return its ID in the target mesh's vertex array (if present), or
       add it (if not). To afterwards allow the using libnray to look
@@ -53,13 +69,27 @@ namespace umesh {
         indexing to our new indexing */
     void translate(uint32_t *indices, int N,
                    UMesh::SP otherMesh);
+    /*! translate one set of vertex indices from the old mesh's
+        indexing to our new indexing */
+    void translate(int32_t *indices, int N,
+                   UMesh::SP otherMesh)
+    { translate((uint32_t*)indices,N,otherMesh); }
 
     void add(UMesh::SP otherMesh, UMesh::PrimRef primRef);
     
     std::map<vec3f,uint32_t> knownVertices;
     
     UMesh &target;
+    const bool createVertexTags;
     // std::vector<size_t> vertexTag;
   };
   
+  void removeDuplicatesAndUnusedVertices(UMesh::SP mesh);
+
+  /*! removed all vertices that are not used by any prim, and
+      re-indexes all prims with the new vertex/value array indices
+      after this compaction. CAREFUL: this function assumes that the mesh does
+      NOT have duplicate vertices */
+  void removeUnusedVertices(UMesh::SP mesh);
+
 } // ::tetty

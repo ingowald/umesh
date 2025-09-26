@@ -15,7 +15,6 @@
 # ======================================================================== #
 
 add_definitions(${OWL_CXX_FLAGS})
-find_package(CUDA)
 
 # ------------------------------------------------------------------
 # print basic info of a umesh: #verts, tris, quads, tets, etc, as well
@@ -25,9 +24,31 @@ add_executable(umeshInfo
   info.cpp
   )
 target_link_libraries(umeshInfo
+  PUBLIC
   umesh
   )
 
+# ------------------------------------------------------------------
+# print basic info of a umesh: #verts, tris, quads, tets, etc, as well
+# as bounding box.
+# ------------------------------------------------------------------
+add_executable(umeshReplaceScalarField
+  replaceScalarField.cpp
+  )
+target_link_libraries(umeshReplaceScalarField
+  PUBLIC
+  umesh
+  )
+
+# ------------------------------------------------------------------
+# same as info, with added sanity checks (valid indices etc)
+# ------------------------------------------------------------------
+add_executable(umeshSanityCheck
+  sanityCheck.cpp
+  )
+target_link_libraries(umeshSanityCheck
+  umesh
+  )
 # ------------------------------------------------------------------
 # import a OFF file to umesh format
 # ------------------------------------------------------------------
@@ -35,17 +56,48 @@ add_executable(umeshImportOFF
   importOFF.cpp
   )
 target_link_libraries(umeshImportOFF
+  PUBLIC
+  umesh
+  )
+
+# ------------------------------------------------------------------
+# load umesh(es) and save list of all bounding boxes
+# ------------------------------------------------------------------
+add_executable(umeshExportBBs
+  exportBBs.cpp
+  )
+target_link_libraries(umeshExportBBs
+  PUBLIC
   umesh
   )
 
 
 # ------------------------------------------------------------------
+# import a RAW *structured* mesh as if it was a umesh with hexes
+# ------------------------------------------------------------------
+add_executable(umeshImportStructured
+  importStructured.cpp
+  )
+target_link_libraries(umeshImportStructured
+  PUBLIC
+  umesh
+  )
+
+  # ------------------------------------------------------------------
 # import a OFF file to umesh format
 # ------------------------------------------------------------------
 add_executable(umeshImportUGrid64
   importUGrid64.cpp
   )
 target_link_libraries(umeshImportUGrid64
+  PUBLIC
+  umesh
+  )
+add_executable(umeshImportUGrid32
+  importUGrid32.cpp
+  )
+target_link_libraries(umeshImportUGrid32
+  PUBLIC
   umesh
   )
 
@@ -57,6 +109,7 @@ add_executable(umeshTetrahedralize
   tetrahedralize.cpp
   )
 target_link_libraries(umeshTetrahedralize
+  PUBLIC
   umesh
   )
 
@@ -73,6 +126,7 @@ add_executable(umeshExtractIsoSurface
   extractIsoSurface.cpp
   )
 target_link_libraries(umeshExtractIsoSurface
+  PUBLIC
   umesh
   )
 
@@ -84,6 +138,7 @@ add_executable(umeshComputeTetConnectivity
   computeTetConnectivity.cpp
   )
 target_link_libraries(umeshComputeTetConnectivity
+  PUBLIC
   umesh
   )
 
@@ -94,9 +149,11 @@ target_link_libraries(umeshComputeTetConnectivity
 # elements
 # ------------------------------------------------------------------
 add_executable(umeshComputeShell
-  computeShell.cpp
+  extractShell.cpp
+# do not use this any more:  computeShell.cpp
   )
 target_link_libraries(umeshComputeShell
+  PUBLIC
   umesh
   )
 
@@ -109,6 +166,7 @@ add_executable(umeshPartitionSpatially
   partitionSpatially.cpp
   )
 target_link_libraries(umeshPartitionSpatially
+  PUBLIC
   umesh
   )
 
@@ -116,10 +174,58 @@ add_executable(umeshPartitionObjectSpace
   partitionObjectSpace.cpp
   )
 target_link_libraries(umeshPartitionObjectSpace
+  PUBLIC
   umesh
   )
 
+# ------------------------------------------------------------------
+# no computations at all - just dumps the mesh that's implicit in the
+# input umesh, and dumps it in obj format (other prims get ignored)
+# ------------------------------------------------------------------
+add_executable(umeshExtractSurfaceMesh
+  extractSurfaceMesh.cpp
+  )
+target_link_libraries(umeshExtractSurfaceMesh
+  PUBLIC
+  umesh
+  )
 
+# ------------------------------------------------------------------
+# computes the outer shell faces of the volume elements (ie, all those
+# faces that are NOT shared between two elements, then dumps those in
+# obj or BTM format)
+# ------------------------------------------------------------------
+add_executable(umeshExtractShell
+  extractShell.cpp
+  )
+target_link_libraries(umeshExtractShell
+  PUBLIC
+  umesh
+  )
+
+# ------------------------------------------------------------------
+# no computations at all - just dumps the mesh that's implicit in the
+# input umesh, and dumps it in obj format (other prims get ignored)
+# ------------------------------------------------------------------
+add_executable(umeshExaToUMesh
+  exaToUMesh.cpp
+  )
+target_link_libraries(umeshExaToUMesh
+  PUBLIC
+  umesh
+  )
+
+# ------------------------------------------------------------------
+# no computations at all - just dumps the mesh that's implicit in the
+# input umesh, and dumps it in obj format (other prims get ignored)
+# ------------------------------------------------------------------
+add_executable(umeshFixNegativeVolumeElements
+  fixNegativeVolumeElements.cpp
+  )
+target_link_libraries(umeshFixNegativeVolumeElements
+  PUBLIC
+  umesh
+  )
 
 # ------------------------------------------------------------------
 # computes faces, and face-connectiviy information, for a umesh; once
@@ -127,3 +233,21 @@ target_link_libraries(umeshPartitionObjectSpace
 # ------------------------------------------------------------------
 add_subdirectory(computeFaces)
 
+
+# ------------------------------------------------------------------
+# generates soe test cases for exa to umesh generator
+# ------------------------------------------------------------------
+add_executable(exaTestCases
+  exaTestCase.cpp
+  )
+target_link_libraries(exaTestCases
+  PUBLIC
+  umesh
+  )
+
+# ------------------------------------------------------------------
+# convert umesh to vtu
+# ------------------------------------------------------------------
+if (UMESH_USE_VTK)
+  add_subdirectory(toVTU)
+endif()

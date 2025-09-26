@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "umesh/io/ugrid64.h"
+#include "umesh/io/ugrid32.h"
 #include "umesh/io/UMesh.h"
 #include "umesh/tetrahedralize.h"
 
@@ -26,6 +26,7 @@ namespace umesh {
       std::cerr << "Error : " << error  << "\n\n";
 
     std::cout << "Usage: ./umeshImportUGrid64 <in.ugrid64> <scalarsFile.bin> -o <out.umesh>" << std::endl;;
+    std::cout << "  --doubles : input vertices are in double precision" << std::endl;
     exit (error != "");
   };
 
@@ -37,12 +38,20 @@ namespace umesh {
     /*! if enabled, we'll only save the tets that _we_ created, not
         those that were in the file initially */
     bool skipActualTets = false;
+    io::UGrid32Loader::VertexFormat
+      vertexFormat = io::UGrid32Loader::AUTO;
     for (int i=1;i<ac;i++) {
       const std::string arg = av[i];
       if (arg == "-h")
         usage();
       else if (arg == "-o")
         outFileName = av[++i];
+      else if (arg == "--doubles" || arg == "-d")
+        vertexFormat = io::UGrid32Loader::DOUBLE;
+      else if (arg == "--floats" || arg == "-f")
+        vertexFormat = io::UGrid32Loader::FLOAT;
+      else if (arg == "--verbose" || arg == "-v")
+        umesh::verbose = 1;
       else if (arg[0] != '-') {
         if (ugridFileName == "")
           ugridFileName = arg;
@@ -56,11 +65,12 @@ namespace umesh {
     
     if (ugridFileName == "") usage("no ugrid file specified");
     if (scalarsFileName == "") //usage("no scalars file specified");
-      std::cout << "Warning: no scalars file specified!!!" << std::endl;
+      std::cout << "Warning: no scalars file specified... only storing vertex IDs" << std::endl;
     if (outFileName == "") usage("no output file specified");
-    
-    std::cout << "loading ugrid64 from " << ugridFileName << " + " << scalarsFileName << std::endl;
-    UMesh::SP in = io::UGrid64Loader::load(ugridFileName,scalarsFileName);
+    std::cout << "loading ugrid32 from " << ugridFileName << " + " << scalarsFileName << std::endl;
+    UMesh::SP in = io::UGrid32Loader::load(vertexFormat,
+                                           ugridFileName,
+                                           scalarsFileName);
     if (scalarsFileName == "")
       for (size_t i=0;i<in->vertices.size();i++)
         in->vertexTags.push_back(i);

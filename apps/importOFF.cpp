@@ -56,6 +56,16 @@ namespace umesh {
       vec4i tet;
       int rc = fscanf(file,"%i %i %i %i\n",&tet.x,&tet.y,&tet.z,&tet.w);
       assert(rc == 4);
+      
+      // swap order if required
+      const vec3f v0 = mesh->vertices[tet.x];
+      const vec3f v1 = mesh->vertices[tet.y];
+      const vec3f v2 = mesh->vertices[tet.z];
+      const vec3f v3 = mesh->vertices[tet.w];
+      float volume = dot(v3-v0,cross(v1-v0,v2-v0));
+      if (volume == 0.f) continue;
+      if (volume < 0.f)
+        std::swap(tet.y,tet.w);
       mesh->tets.push_back(tet); //-vec4i(1));
     }
     mesh->finalize();

@@ -69,6 +69,23 @@ namespace umesh {
            readElement(in,t[i]);
     }
 
+    namespace wholeFile {
+      template<typename T>
+      inline std::vector<T> readVectorOf(const std::string &fileName)
+      {
+        std::ifstream in(fileName,std::ios::binary);
+        std::vector<T> vt;
+        while (true) {
+          if (in.eof()) break;
+          T t;
+          in.read((char*)&t,sizeof(t));
+          if (!in.good()) break;
+          vt.push_back(t);
+        }
+        return vt;
+      }
+    }
+    
     template<typename T>
     inline void writeElement(std::ostream &out, const T &t)
     {
@@ -101,6 +118,13 @@ namespace umesh {
     }
 
     template<typename T>
+    void writeVector(const std::string &outFileName, const std::vector<T> &vt)
+    {
+      std::ofstream out(outFileName,std::ios::binary);
+      writeVector(out,vt);
+    }
+    
+    template<typename T>
     inline T readElement(std::istream &in)
     {
       T t;
@@ -118,7 +142,7 @@ namespace umesh {
     
     inline void writeString(std::ostream &out, const std::string &s)
     {
-      int size = s.size();
+      int size = (int)s.size();
       writeElement(out,size);
       writeArray(out,s.data(),size);
     }
@@ -130,5 +154,24 @@ namespace umesh {
       return s;
     }
 
+    /*! helper tool that loads a binary file of floats, and returns
+        them as a std::vector. File must *not* have any header or
+        trailing info, and size of vector is determined by size of
+        file */
+    inline std::vector<float> loadScalars(std::string &fileName)
+    {
+      std::ifstream in(fileName.c_str(),std::ios::binary);
+      if (!in.good())
+        throw std::runtime_error("could not open "+fileName);
+      float f;
+      std::vector<float> floats;
+      while (!in.eof()) {
+        in.read((char *)&f,sizeof(f));
+        if (!in.good()) break;
+        floats.push_back(f);
+      }
+      return floats;
+    }
+    
   } // ::tetty::io
 } // ::tetty

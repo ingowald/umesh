@@ -21,8 +21,26 @@
 # ifdef UMESH_HAVE_TBB
 #  include "tbb/parallel_sort.h"
 # endif
-
+#include <set>
+#ifdef __CUDACC__
 #include <cuda_runtime.h>
+#endif
+#include <algorithm>
+#include <string.h>
+
+#ifndef PRINT
+#ifdef __CUDA_ARCH__
+# define PRINT(va) /**/
+# define PING /**/
+#else
+# define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
+#else
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+#endif
+#endif
+#endif
 
 #define CUDA_CHECK( call )                                              \
   {                                                                     \
@@ -77,7 +95,7 @@ namespace umesh {
   
 #endif
   
-  struct UMESH_ALIGN(64) PrimFacetRef{
+  struct PrimFacetRef{
     /*! only 4 possible types (tet, pyr, wedge, or hex) */
     uint64_t primType:3;
     /*! only 8 possible facet it could be (in a hex) */
@@ -85,7 +103,7 @@ namespace umesh {
     int64_t  primIdx:58;
   };
   
-  struct Facet {
+  struct UMESH_ALIGN(16) Facet {
     int4         vertexIdx;
     PrimFacetRef prim;
     int          orientation;
@@ -97,10 +115,17 @@ namespace umesh {
       return
         (a.vertexIdx.x < b.vertexIdx.x)
         ||
-        ((a.vertexIdx.x == b.vertexIdx.x) && (a.vertexIdx.y < b.vertexIdx.y))
+        ((a.vertexIdx.x == b.vertexIdx.x) &&
+         (a.vertexIdx.y <  b.vertexIdx.y))
         ||
-        ((a.vertexIdx.x == b.vertexIdx.x) && (a.vertexIdx.y == b.vertexIdx.y)
-         && (a.vertexIdx.z < b.vertexIdx.z));
+        ((a.vertexIdx.x == b.vertexIdx.x) &&
+         (a.vertexIdx.y == b.vertexIdx.y) &&
+         (a.vertexIdx.z <  b.vertexIdx.z))
+        ||
+        ((a.vertexIdx.x == b.vertexIdx.x) &&
+         (a.vertexIdx.y == b.vertexIdx.y) &&
+         (a.vertexIdx.z == b.vertexIdx.z) &&
+         (a.vertexIdx.w <  b.vertexIdx.w));
     }
   };
 
@@ -138,7 +163,7 @@ namespace umesh {
   inline __umesh_both__
   void computeUniqueVertexOrder(Facet &facet)
   {
-    int4 &idx = facet.vertexIdx;
+    int4 idx = facet.vertexIdx;
     if (idx.w < 0) {
       if (idx.y < idx.x)
         { swap(idx.x,idx.y); facet.orientation = 1-facet.orientation; }
@@ -164,6 +189,7 @@ namespace umesh {
         swap(idx.w,idx.y);
       }
     }
+    facet.vertexIdx = idx;
   }
 
 #ifdef __CUDACC__
@@ -178,9 +204,9 @@ namespace umesh {
 
   void computeUniqueVertexOrder(Facet *facet, size_t numFacets)
   {
-    size_t blockSize = 1024;
+    size_t blockSize = 128;
     size_t numBlocks = divRoundUp(numFacets,blockSize);
-    computeUniqueVertexOrderLaunch<<<numBlocks,blockSize>>>
+    computeUniqueVertexOrderLaunch<<<(int)numBlocks,(int)blockSize>>>
       (facet,numFacets);
   }
 #else
@@ -211,10 +237,10 @@ namespace umesh {
     for (int i=0;i<4;i++) facets[i].prim.primIdx  = tetIdx;
     for (int i=0;i<4;i++) facets[i].orientation   = 0;
     
-    vec4i tet = mesh.tets[tetIdx];
+    UMesh::Tet tet = mesh.tets[tetIdx];
     facets[0].vertexIdx = { tet.y,tet.w,tet.z,-1 };
     facets[1].vertexIdx = { tet.x,tet.z,tet.w,-1 };
-    facets[2].vertexIdx = { tet.x,tet.w,tet.x,-1 };
+    facets[2].vertexIdx = { tet.x,tet.w,tet.y,-1 };
     facets[3].vertexIdx = { tet.x,tet.y,tet.z,-1 };
   }
   
@@ -342,9 +368,9 @@ namespace umesh {
       + mesh.numPyrs
       + mesh.numWedges
       + mesh.numHexes;
-    size_t blockSize = 1024;
+    size_t blockSize = 128;
     size_t numBlocks = divRoundUp(numPrims,blockSize);
-    writeFacetsLaunch<<<numBlocks,blockSize>>>(facets,mesh);
+    writeFacetsLaunch<<<(int)numBlocks,(int)blockSize>>>(facets,mesh);
   }
 #else
   void writeFacets(Facet *facets,
@@ -451,9 +477,10 @@ namespace umesh {
                              size_t facetIdx)
   {
     const Facet facet = facets[facetIdx];
-    size_t faceIdx = faceIndices[facetIdx];
+    size_t faceIdx = faceIndices[facetIdx]-1;
     SharedFace &face = faces[faceIdx];
     auto &side = facet.orientation ? face.onFront : face.onBack;
+    face.vertexIdx = facet.vertexIdx;
     side = facet.prim;
   }
   
@@ -473,9 +500,9 @@ namespace umesh {
                         const uint64_t *faceIndices,
                         size_t numFacets)
   {
-    size_t blockSize = 1024;
+    size_t blockSize = 128;
     size_t numBlocks = divRoundUp(numFacets,blockSize);
-    facesWriteFacesLaunch<<<numBlocks,blockSize>>>
+    facesWriteFacesLaunch<<<(int)numBlocks,(int)blockSize>>>
       (faces,facets,faceIndices,numFacets);
   }
 #else
@@ -525,7 +552,21 @@ namespace umesh {
   void finishFaces(std::vector<SharedFace> &result,
                    SharedFace *faces,
                    size_t numFaces)
-  { /* nothing to do */ }
+  {
+#if 0
+    /* validate - make sure to have this off in releases */
+    std::set<vec4i> knownFaces;
+    for (int i=0;i<numFaces;i++) {
+      vec4i idx = faces[i].vertexIdx;
+      std::sort(&idx.x,&idx.x+4);
+      if (knownFaces.find(idx) != knownFaces.end())
+        std::cout << "validation failed: given face already exists : " << faces[i].vertexIdx << std::endl;
+      knownFaces.insert(idx);
+    }
+    std::cout << "done validation, found " << knownFaces.size() << " unique faces" << std::endl;
+#endif
+    /* nothing to do */
+  }
 #endif
 
   // ==================================================================
@@ -591,15 +632,22 @@ namespace umesh {
                        Facet *facets,
                        size_t numFacets)
   {
-    size_t blockSize = 1024;
-    size_t numBlocks = divRoundUp(numFacets,blockSize);
-    initFaceIndicesLaunch<<<numBlocks,blockSize>>>
+    size_t blockSize = 128;
+    size_t numBlocks = divRoundUp(numFacets+1,blockSize);
+    initFaceIndicesLaunch<<<(int)numBlocks,(int)blockSize>>>
       (faceIndices,facets,numFacets);
   }
   void prefixSum(uint64_t *faceIndices,
                  size_t numFacets)
   {
     thrust::exclusive_scan(thrust::device,
+                           faceIndices,faceIndices+numFacets,
+                           faceIndices);
+  }
+  void postfixSum(uint64_t *faceIndices,
+                 size_t numFacets)
+  {
+    thrust::inclusive_scan(thrust::device,
                            faceIndices,faceIndices+numFacets,
                            faceIndices);
   }
@@ -628,6 +676,17 @@ namespace umesh {
       size_t old = faceIndices[i];
       faceIndices[i] = sum;
       sum += old;
+    }
+  }
+  /*! not parallelized... this will likely be mem bound, anyway */
+  void postfixSum(uint64_t *faceIndices,
+                 size_t numFacets)
+  {
+    size_t sum = 0;
+    for (size_t i=0;i<numFacets;i++) {
+      size_t old = faceIndices[i];
+      sum += old;
+      faceIndices[i] = sum;
     }
   }
 #endif
@@ -660,12 +719,10 @@ namespace umesh {
     
     // -------------------------------------------------------
     sortFacets(facets,numFacets);
-
-    // -------------------------------------------------------
     uint64_t *faceIndices = allocateIndices(numFacets);
     initFaceIndices(faceIndices,facets,numFacets);
-    prefixSum(faceIndices,numFacets);
-
+    postfixSum(faceIndices,numFacets);
+    // prefixSum(faceIndices,numFacets);
     // -------------------------------------------------------
     size_t numFaces = faceIndices[numFacets-1]+1;
     std::vector<SharedFace> result;
@@ -686,26 +743,34 @@ namespace umesh {
     std::chrono::steady_clock::time_point
       end_inc = std::chrono::steady_clock::now();
     std::cout << "done computing faces, including upload/download "
-              << std::chrono::duration_cast<std::chrono::seconds>(end_inc - begin_inc).count() << " secs, vs including "
-              << std::chrono::duration_cast<std::chrono::seconds>(end_exc - begin_exc).count()  << std::endl;
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end_inc - begin_inc).count()/1024.f << " secs, vs excluding "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end_exc - begin_exc).count()/1024.f  << std::endl;
     return result;
   }
   
   extern "C" int main(int ac, char **av)
   {
-    std::string inFileName, outFileName;
-    for (int i=1;i<ac;i++) {
-      const std::string arg = av[i];
-      if (arg == "-o")
-        outFileName = av[++i];
-      else if (arg[0] == '-')
-        usage("unknown cmdline argument "+arg);
-      else
-        inFileName = arg;
-    }
-    UMesh::SP input = UMesh::loadFrom(inFileName);
-    std::vector<SharedFace> result
-      = computeFaces(input);
+      try {
+          std::string inFileName, outFileName;
+          for (int i = 1; i < ac; i++) {
+              const std::string arg = av[i];
+              if (arg == "-o")
+                  outFileName = av[++i];
+              else if (arg[0] == '-')
+                  usage("unknown cmdline argument " + arg);
+              else
+                  inFileName = arg;
+          }
+          if (inFileName == "")
+              throw std::runtime_error("no test file specified");
+          UMesh::SP input = UMesh::loadFrom(inFileName);
+          std::vector<SharedFace> result
+              = computeFaces(input);
+          std::cout << "done computing shared faces, found " << result.size() << " faces for mesh of " << input->toString() << std::endl;
+      }
+      catch (std::exception e) {
+          std::cerr << "fatal error " << e.what() << std::endl;
+      }
     return 0;
   } 
   

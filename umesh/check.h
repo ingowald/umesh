@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2018-2020 Ingo Wald                                            //
+// Copyright 2018-2021 Ingo Wald                                            //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,34 +16,24 @@
 
 #pragma once
 
-#include "umesh/io/IO.h"
-#include "umesh/UMesh.h"
+#include "UMesh.h"
 
+#ifdef NDEBUG
+#else
+#  define UMESH_ENABLE_SANITY_CHECKS 1
+#endif
 namespace umesh {
-  namespace io {
 
-    struct UGrid32Loader {
-      
-      typedef enum
-        { /* try to detect automatically from file name: */
-         AUTO,
-         DOUBLE,
-         FLOAT
-        } VertexFormat;
-      
-      UGrid32Loader(const VertexFormat vertexFormat,
-                    const std::string &dataFileName,
-                    const std::string &scalarFileName);
+  /* if specified, the sanity checker will ignore 'no volume prims' */
+#define CHECK_FLAG_MESH_IS_SURFACE (1<<0)
 
-      static UMesh::SP load(const VertexFormat vertexFormat,
-                            const std::string &dataFileName,
-                            const std::string &scalarFileName="");
-      static UMesh::SP load(const std::string &dataFileName,
-                            const std::string &scalarFileName="")
-      { return load(AUTO,dataFileName,scalarFileName); }
-      
-      UMesh::SP result;
-    };
-
-  }
-}
+#if UMESH_ENABLE_SANITY_CHECKS
+  /*! perform some sanity checking of the given mesh (checking indices
+    are valid, etc) */
+  void sanityCheck(UMesh::SP umesh, uint32_t flags = 0);
+#else
+  inline void sanityCheck(UMesh::SP umesh, uint32_t flags = 0)
+  { /* sanity checks disabled by flag */ }
+#endif
+  
+} // :: umesh

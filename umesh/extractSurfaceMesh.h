@@ -16,34 +16,15 @@
 
 #pragma once
 
-#include "umesh/io/IO.h"
 #include "umesh/UMesh.h"
 
 namespace umesh {
-  namespace io {
 
-    struct UGrid32Loader {
-      
-      typedef enum
-        { /* try to detect automatically from file name: */
-         AUTO,
-         DOUBLE,
-         FLOAT
-        } VertexFormat;
-      
-      UGrid32Loader(const VertexFormat vertexFormat,
-                    const std::string &dataFileName,
-                    const std::string &scalarFileName);
+  /*! Given a umesh with possibly mixed surface and volumetric
+      eements, create a new umesh that contains _only_ surface
+      elements, and, in particular, only vertices used by these
+      surface elements.
+  */
+  UMesh::SP extractSurfaceMesh(UMesh::SP mesh);
+} // ::umesh
 
-      static UMesh::SP load(const VertexFormat vertexFormat,
-                            const std::string &dataFileName,
-                            const std::string &scalarFileName="");
-      static UMesh::SP load(const std::string &dataFileName,
-                            const std::string &scalarFileName="")
-      { return load(AUTO,dataFileName,scalarFileName); }
-      
-      UMesh::SP result;
-    };
-
-  }
-}

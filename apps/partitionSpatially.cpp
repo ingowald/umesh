@@ -96,14 +96,15 @@ namespace umesh {
                           UMesh::SP in)
   {
     Brick *brick = new Brick;
-    in->createVolumePrimRefs(brick->prims);
+    // in->createVolumePrimRefs(brick->prims);
+    brick->prims = in->createAllPrimRefs();
     box3f bounds;
     for (auto prim : brick->prims) {
       const box3f pb = in->getBounds(prim);
       bounds.extend(pb);
     }
     brick->domain = bounds;
-    bricks.push({brick->prims.size(),brick});
+    bricks.push({(int)brick->prims.size(),brick});
   }
 
   void writeBrick(UMesh::SP in,
@@ -130,7 +131,8 @@ namespace umesh {
         indexer.add(in,prim);
       const std::string fileName = fileBase+".umesh";
       std::cout << "saving out " << fileName
-                << " w/ " << prettyNumber(out->size()) << " prims" << std::endl;
+                << " w/ " << prettyNumber(out->size()) << " prims, domain is " << brick->domain << std::endl;
+      out->finalize();
       io::saveBinaryUMesh(fileName,out);
     }
   }
@@ -150,9 +152,10 @@ namespace umesh {
         outFileBase = av[++i];
       else if (arg == "-lt" || arg == "--leaf-threshold")
         leafThreshold = atoi(av[++i]);
-      else if (arg == "-n" || arg == "-mb" || arg == "--max-bricks")
+      else if (arg == "-n" || arg == "-mb" || arg == "--max-bricks") {
         maxBricks = atoi(av[++i]);
-      else if (arg == "-pro" || arg == "--prim-refs-only")
+        leafThreshold= 1;
+      } else if (arg == "-pro" || arg == "--prim-refs-only")
         primRefsOnly = true;
       else if (arg[0] != '-')
         inFileName = arg;
@@ -191,7 +194,7 @@ namespace umesh {
           delete half[i];
         }
         else
-          bricks.push({half[i]->prims.size(),half[i]});
+          bricks.push({ (int)half[i]->prims.size(),half[i]});
       }
       delete biggest.second;
     }
@@ -206,13 +209,20 @@ namespace umesh {
       range1f valueRange;
       writeBrick(in,outFileBase+ext,brick,valueRange);
       brickDomains.push_back(brick->domain);
+      valueRanges.push_back(valueRange);
       delete brick;
     }
 
-    std::ofstream boundsFile(outFileBase+".domains",std::ios::binary);
+    std::cout << "# =======================================================" << std::endl;
+    std::cout << "# Done partitioning, writing final results" << std::endl;
+    std::cout << "# =======================================================" << std::endl;
+    const std::string boundsFileName = outFileBase+".domains";
+    std::ofstream boundsFile(boundsFileName.c_str(),std::ios::binary);
+    std::cout << "writing " << brickDomains.size() << " per-brick domains and value ranges to " << boundsFileName << ")" << std::endl;
     io::writeVector(boundsFile,brickDomains);
+    // std::cout << "writing " << valueRanges.size() << " brick value ranges" << std::endl;
     io::writeVector(boundsFile,valueRanges);
-    std::cout << "done wirting domains... done all" << std::endl;
+    std::cout << "done writing domains... done all" << std::endl;
   }
   
 } // ::umesh

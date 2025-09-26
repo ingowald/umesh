@@ -18,6 +18,7 @@
    indebted! All loader code rewritten from scratch. */
 
 #include "umesh/io/ugrid32.h"
+#include "umesh/io/ugrid64.h"
 #include "umesh/io/fun3dScalars.h"
 #include "umesh/RemeshHelper.h"
 
@@ -35,6 +36,37 @@ namespace umesh {
   /*! variable to load in */
   std::string variable = "";
 
+  // /*! variable to load in */
+  // std::string surfMeshName = "";
+
+  inline bool isDegen(const float f)
+  { return f <= -1e10f || f >= 1e10f; }
+  
+  inline bool isDegen(const vec3f &v)
+  {
+    return
+      isDegen(v.x) || isDegen(v.y) || isDegen(v.z);
+  }
+
+  template<typename Prim>
+  inline bool isDegen(UMesh::SP mesh, Prim prim)
+  {
+    for (int i=0;i<prim.numVertices;i++)
+      if (prim[i] < 0 || isDegen(mesh->vertices[prim[i]])) return true;
+    return false;
+  }
+  
+  template<typename Prim>
+  inline void warnDegen(UMesh::SP mesh, Prim prim)
+  {
+    static size_t numDegen = 0;
+    numDegen++;
+    std::cout << "  >> degen prim #" << numDegen << std::endl;
+    for (int i=0;i<prim.numVertices;i++)
+      std::cout << "       vtx " << prim[i] << std::flush
+                << " " << mesh->vertices[prim[i]] << std::endl;
+  }
+
   struct MergedMesh {
 
     MergedMesh() 
@@ -43,9 +75,9 @@ namespace umesh {
 
     void loadScalars(UMesh::SP mesh, int fileID,
                      /*! where each one of the given "volume_data" and
-                         "mesh" files' vertices are supposed to go in
-                         the global, reconstituted file */
-                     std::vector<size_t> &globalVertexIDs)
+                       "mesh" files' vertices are supposed to go in
+                       the global, reconstituted file */
+                     std::vector<uint64_t> &globalVertexIDs)
     {
       if (scalarsPath == "")
         return;
@@ -55,31 +87,10 @@ namespace umesh {
       std::cout << "reading time step " << timeStep
                 << " from " << scalarsFileName << std::endl;
 
-      // Fun3DScalarsReader reader(scalarsFileName);
-      // reader.readTimeStep(scalars,variable,timeStep);
-      scalars = fun3d::readTimeStep(scalarsFileName,variable,timeStep);
-      globalVertexIDs = reader.globalVertexIDs;
-      
-    //   std::ifstream file(scalarsFileName,std::ios::binary);
-    //   if (!file.good())
-    //     throw std::runtime_error("error opening scalars file....");
-      
-    //   scalars.resize(mesh->vertices.size());
-    //   size_t numBytes = sizeof(float)*mesh->vertices.size();
-
-    //   file.seekg(timeStep*numBytes,
-    //              timeStep<0
-    //              ? std::ios::end
-    //              : std::ios::beg);
-      
-    //   file.read((char*)scalars.data(),numBytes);
-    //   if (!file) std::cout << "FILE INVALID" << std::endl;
-    //   if (!file.good())
-    //     throw std::runtime_error("error reading scalars....");
-    //   std::cout << "read " << prettyNumber(scalars.size())
-    //             << " scalars (first one is " << scalars[0] << ")" << std::endl;
+      scalars = io::fun3d::readTimeStep(scalarsFileName,variable,timeStep,
+                                        &globalVertexIDs);
     }
-      
+
     bool addPart(int fileID)
     {
       std::cout << "----------- part " << fileID << " -----------" << std::endl;
@@ -104,8 +115,14 @@ namespace umesh {
         fclose(metaFile);
       }
 
-      UMesh::SP mesh = io::UGrid32Loader::load(meshFileName);
+      // apparently the lander we have is in FLOAT vertices
+      UMesh::SP mesh = io::UGrid32Loader::load(io::UGrid32Loader::FLOAT,
+                                               meshFileName);
+      std::cout << "loaded part mesh " << mesh->toString() << " " << mesh->getBounds() << std::endl;
+      for (auto vtx : mesh->vertices)
+        if (isDegen(vtx)) std::cout << " > DEGEN VERTEX " << vtx << std::endl;
 
+      
       loadScalars(mesh,fileID,globalVertexIDs);
 
       size_t requiredVertexArraySize = merged->vertices.size();
@@ -122,61 +139,99 @@ namespace umesh {
         merged->vertices[globalVertexIDs[i]] = mesh->vertices[i];
         merged->perVertex->values[globalVertexIDs[i]] = scalars[i];
       }
+
+      if (verbose)
+        std::cout << "merging in " << prettyNumber(mesh->triangles.size()) << " triangles" << std::endl;
+      for (int i=0;i<mesh->triangles.size();i++) {
+        auto in = mesh->triangles[i];
+        if (!(i % 100000)) { std::cout << "." << std::flush; };
+        UMesh::Triangle out;
+        translate((uint32_t*)&out,(const uint32_t*)&in,3,mesh->vertices,fileID);
+        if (isDegen(merged,out)) {
+          warnDegen(merged,out);
+          continue;
+        }
+        merged->triangles.push_back(out);
+      }
+      if (!mesh->triangles.empty()) 
+        std::cout << std::endl;
+
+      if (verbose)
+        std::cout << "merging in " << prettyNumber(mesh->quads.size()) << " quads" << std::endl;
+      for (int i=0;i<mesh->quads.size();i++) {
+        auto in = mesh->quads[i];
+        if (!(i % 100000)) { std::cout << "." << std::flush; };
+        UMesh::Quad out;
+        translate((uint32_t*)&out,(const uint32_t*)&in,4,mesh->vertices,fileID);
+        if (isDegen(merged,out)) {
+          warnDegen(merged,out);
+          continue;
+        }
+        merged->quads.push_back(out);
+      }
+      if (!mesh->quads.empty()) 
+        std::cout << std::endl;
+
+
       // for (auto in : mesh->tets) {
-      std::cout << "merging in " << prettyNumber(meta.tets) << " out of " << prettyNumber(mesh->tets.size()) << " tets" << std::endl;
+      if (verbose)
+        std::cout << "merging in " << prettyNumber(meta.tets) << " out of " << prettyNumber(mesh->tets.size()) << " tets" << std::endl;
       for (int i=0;i<meta.tets;i++) {
         auto in = mesh->tets[i];
         if (!(i % 100000)) { std::cout << "." << std::flush; };
         UMesh::Tet out;
         translate((uint32_t*)&out,(const uint32_t*)&in,4,mesh->vertices,fileID);
+        if (isDegen(merged,out)) {
+          warnDegen(merged,out);
+          continue;
+        }
         merged->tets.push_back(out);
       }
       std::cout << std::endl;
 
-      std::cout << "merging in " << prettyNumber(meta.pyrs) << " out of " << prettyNumber(mesh->pyrs.size()) << " pyrs" << std::endl;
+      if (verbose)
+        std::cout << "merging in " << prettyNumber(meta.pyrs) << " out of " << prettyNumber(mesh->pyrs.size()) << " pyrs" << std::endl;
       for (int i=0;i<meta.pyrs;i++) {
         auto in = mesh->pyrs[i];
         UMesh::Pyr out;
         translate((uint32_t*)&out,(const uint32_t*)&in,5,mesh->vertices,fileID);
+        if (isDegen(merged,out)) {
+          warnDegen(merged,out);
+          continue;
+        }
         merged->pyrs.push_back(out);
       }
       
-      std::cout << "merging in " << prettyNumber(meta.wedges) << " out of " << prettyNumber(mesh->wedges.size()) << " wedges" << std::endl;
+      if (verbose)
+        std::cout << "merging in " << prettyNumber(meta.wedges) << " out of " << prettyNumber(mesh->wedges.size()) << " wedges" << std::endl;
       for (int i=0;i<meta.wedges;i++) {
         auto in = mesh->wedges[i];
         UMesh::Wedge out;
         translate((uint32_t*)&out,(const uint32_t*)&in,6,mesh->vertices,fileID);
+        if (isDegen(merged,out)) {
+          warnDegen(merged,out);
+          continue;
+        }
         merged->wedges.push_back(out);
       }
 
-      std::cout << "merging in " << prettyNumber(meta.hexes)
-                << " out of " << prettyNumber(mesh->hexes.size())
-                << " hexes" << std::endl;
+      if (verbose)
+        std::cout << "merging in " << prettyNumber(meta.hexes)
+                  << " out of " << prettyNumber(mesh->hexes.size())
+                  << " hexes" << std::endl;
       for (int i=0;i<meta.hexes;i++) {
         auto in = mesh->hexes[i];
         UMesh::Hex out;
         translate((uint32_t*)&out,(const uint32_t*)&in,8,mesh->vertices,fileID);
+        if (isDegen(merged,out)) {
+          warnDegen(merged,out);
+          continue;
+        }
         merged->hexes.push_back(out);
       }
-      
-      std::cout << "merging in " << prettyNumber(mesh->triangles.size())
-                << " triangles" << std::endl;
-      for (int i=0;i<mesh->triangles.size();i++) {
-        auto in = mesh->triangles[i];
-        UMesh::Triangle out;
-        translate((uint32_t*)&out,(const uint32_t*)&in,3,mesh->vertices,fileID);
-        merged->triangles.push_back(out);
-      }
-      
-      std::cout << "merging in " << prettyNumber(mesh->quads.size())
-                << " quads" << std::endl;
-      for (int i=0;i<mesh->quads.size();i++) {
-        auto in = mesh->quads[i];
-        UMesh::Quad out;
-        translate((uint32_t*)&out,(const uint32_t*)&in,4,mesh->vertices,fileID);
-        merged->quads.push_back(out);
-      }
-      std::cout << " >>> done part " << fileID << ", got " << merged->toString(false) << " (note it's OK that bounds aren't set yet)" << std::endl;
+
+      merged->finalize();
+      std::cout << " >>> done part " << fileID << ", got\n" << merged->toString(false) << " (note it's OK that bounds aren't set yet)" << std::endl;
       return true;
     }
     
@@ -184,7 +239,10 @@ namespace umesh {
                        const std::vector<vec3f> &vertices,
                        int fileID)
     {
-      return globalVertexIDs[in];
+      size_t gID = globalVertexIDs[in];
+      if (gID >= (1ull<<31))
+        throw std::runtime_error("global vertex ID doesn't fit into 32-bit signed int");
+      return (uint32_t)gID;
     }
     
     void translate(uint32_t *out,
@@ -198,7 +256,7 @@ namespace umesh {
     }
     
     UMesh::SP merged;
-    std::vector<size_t> globalVertexIDs;
+    std::vector<uint64_t> globalVertexIDs;
     /*! desired time step's scalars for current brick, if provided */
     std::vector<float> scalars;
   };
@@ -233,12 +291,16 @@ namespace umesh {
         num = atoi(av[++i]);
       else if (arg == "--first")
         begin = atoi(av[++i]);
+      else if (arg == "-v" || arg == "--verbose")
+        umesh::verbose = 1;
       else if (arg == "-s" || arg == "--scalars")
         scalarsPath = av[++i];
       else if (arg == "-ts" || arg == "--time-step")
         timeStep = atoi(av[++i]);
       else if (arg == "-var" || arg == "--variable")
         variable = av[++i];
+      // else if (arg == "-surf" || arg == "--surface-mesh")
+      //   surfMeshName = av[++i];
       else if (arg == "-o")
         outFileName = av[++i];
       else if (arg[0] != '-')
@@ -253,7 +315,7 @@ namespace umesh {
       std::string firstFileName = scalarsPath+std::to_string(begin);
       std::vector<std::string> variables;
       std::vector<int> timeSteps;
-      fun3d::getInfo(firstFileName,variables,timeSteps);
+      io::fun3d::getInfo(firstFileName,variables,timeSteps);
       std::cout << "File Info: " << std::endl;
       std::cout << "variables:";
       for (auto var : variables) std::cout << " " << var;
@@ -271,7 +333,7 @@ namespace umesh {
         break;
 
     mesh.merged->finalize();
-    
+
     std::cout << "done all parts, saving output to "
               << outFileName << std::endl;
     mesh.merged->saveTo(outFileName);

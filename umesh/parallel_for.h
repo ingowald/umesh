@@ -61,20 +61,12 @@ namespace umesh {
   }
 #else
 #ifndef UMESH_DISABLE_TBB
-# pragma message("warning: TBB not available, will replace all parallel_for's with serial_for's")
+// # pragma message("(note): cmake did not find TBB, will replace all parallel_for's with serial_for's")
 #endif
   template<typename INDEX_T, typename TASK_T>
   inline void parallel_for(INDEX_T nTasks, TASK_T&& taskFunction, size_t blockSize=1)
   { serial_for(nTasks,taskFunction); }
 #endif
-  
-  // template<typename TASK_T>
-  // void parallel_for_blocked(size_t numTasks, size_t blockSize,
-  //                           TASK_T &&taskFunction)
-  // {
-  //   for (size_t begin=0; begin < numTasks; begin += blockSize)
-  //     taskFunction(begin,std::min(begin+blockSize,numTasks));
-  // }
 
   template<typename TASK_T>
   void serial_for_blocked(size_t begin, size_t end, size_t blockSize,
@@ -88,16 +80,12 @@ namespace umesh {
   void parallel_for_blocked(size_t begin, size_t end, size_t blockSize,
                             const TASK_T &taskFunction)
   {
-#if 0
-    serial_for_blocked(begin,end,blockSize,taskFunction);
-#else
     const size_t numTasks = end-begin;
     const size_t numBlocks = (numTasks+blockSize-1)/blockSize;
     parallel_for(numBlocks,[&](size_t blockID){
                              size_t block_begin = begin+blockID*blockSize;
                              taskFunction(block_begin,std::min(block_begin+blockSize,end));
                            });
-#endif
   }
   
 } // ::umesh

@@ -20,16 +20,6 @@
 namespace umesh {
   namespace io {
     
-    // num values of each array we're going to print ...
-#define N_PRINT 64
-    
-    size_t checkEnv(const char *varName, size_t altValue)
-    {
-      const char *var = getenv(varName);
-      if (var) return atol(var);
-      else return altValue;
-    }
-    
     UMesh::SP UGrid64Loader::load(const std::string &dataFileName,
                                   const std::string &scalarFileName)
     {
@@ -96,7 +86,7 @@ namespace umesh {
       for (size_t i=0;i<header.n_verts;i++) {
         double pos[3];
         readArray(data,pos,3);
-        const vec3f v(pos[0],pos[1],pos[2]);
+        const vec3f v((float)pos[0], (float)pos[1], (float)pos[2]);
 
         if (pos[0] < -1e20f ||
             pos[1] < -1e20f ||
@@ -123,7 +113,7 @@ namespace umesh {
               val > +1e20f) {
             std::cout << "Degen vertex " << i << " " << val << std::endl;
           }
-        }
+        } 
 
         result->perVertex->finalize();
       }

@@ -67,7 +67,7 @@ namespace umesh {
     out.tetFaces.clear();
       
     for (size_t i=0;i<in.tets.size();i++)
-      pushTet(i);
+      pushTet((int)i);
   }
 
   /*! find (or allocate) face that shars these indices (in any

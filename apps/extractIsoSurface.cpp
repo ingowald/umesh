@@ -18,6 +18,21 @@
 #include "umesh/io/UMesh.h"
 #include "umesh/extractIsoSurface.h"
 
+#ifndef PRINT
+#ifdef __CUDA_ARCH__
+# define PRINT(va) /**/
+# define PING /**/
+#else
+# define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
+#else
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+#endif
+#endif
+#endif
+
+
 namespace umesh {
 
   void usage(const std::string error="")
@@ -33,17 +48,27 @@ namespace umesh {
   {
     float isoValue = std::numeric_limits<float>::infinity();
     std::string inFileName;
+    std::string isoScalarsFileName;
+    std::string mappedScalarsFileName;
     std::string outFileName;
     std::string objFileName;
+    std::string npFilePrefix;
+    
     /*! if enabled, we'll only save the tets that _we_ created, not
-        those that were in the file initially */
+      those that were in the file initially */
     for (int i=1;i<ac;i++) {
       const std::string arg = av[i];
       if (arg == "-h")
         usage();
       else if (arg == "-o")
         outFileName = av[++i];
-      else if (arg == "-iso" || arg == "--iso-value" || arg == "--iso")
+      else if (arg == "-o:np")
+        npFilePrefix = av[++i];
+      else if (arg == "-ms" || arg == "--mapped-scalars")
+        mappedScalarsFileName = av[++i];
+      else if (arg == "-is" || arg == "--iso-scalars")
+        isoScalarsFileName = av[++i];
+      else if (arg == "-iv" || arg == "--iso-value" || arg == "--iso")
         isoValue = std::stof(av[++i]);
       else if (arg == "--obj")
         objFileName = av[++i];
@@ -53,15 +78,39 @@ namespace umesh {
         usage("unknown cmd-line arg '"+arg+"'");
     }
     
-    if (inFileName == "") usage("no input file specified");
-    if (outFileName == "" && objFileName == "") usage("neither obj nor umesh output file specified");
-    
+    if (inFileName == "")
+      usage("no input file specified");
+    if (outFileName == "" && objFileName == "" && npFilePrefix == "")
+      usage("neither obj nor umesh output file specified");
     if (isoValue == std::numeric_limits<float>::infinity())
       usage("no iso-value specified");
     
     std::cout << "loading umesh from " << inFileName << std::endl;
     UMesh::SP in = UMesh::loadFrom(inFileName);
-    
+    if (!isoScalarsFileName.empty()) {
+      in->perVertex = std::make_shared<Attribute>();
+      in->perVertex->values = io::wholeFile::readVectorOf<float>(isoScalarsFileName);
+    }
+    std::vector<float> mappedScalars;
+    if (mappedScalarsFileName == ":y") {
+      for (auto v : in->vertices)
+        mappedScalars.push_back(v.y);
+    } else if (mappedScalarsFileName == ":z") {
+      for (auto v : in->vertices)
+        mappedScalars.push_back(v.z);
+    } else
+      if (!mappedScalarsFileName.empty())
+        mappedScalars = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
+
+    if (mappedScalarsFileName.empty())
+      std::cout << "no mapping of any scalar to egnerated iso-surface" << std::endl;
+    else {
+      if (mappedScalars.size() != in->perVertex->values.size())
+        throw std::runtime_error("mapped scalars size doesn't match per vertex scalars.size");
+    }
+    if (in->vertices.size() != in->perVertex->values.size())
+      throw std::runtime_error("vertices size doesn't match per vertex scalars.size");
+
     std::cout << "done loading, found " << in->toString()
               << " ... now extracting iso-surface" << std::endl;
     if (in->pyrs.empty() &&
@@ -74,10 +123,30 @@ namespace umesh {
       std::cout << UMESH_TERMINAL_DEFAULT << std::endl;
     }
     
-    UMesh::SP result = extractIsoSurface(in,isoValue);
+    UMesh::SP result = extractIsoSurface(in,isoValue,mappedScalars);
     std::cout << "done extracting isovalue, found " << result->toString() << std::endl;
+    if (npFilePrefix != "") {
+      std::cout << "writing in raw numpy arrays format to " << npFilePrefix
+                << "{.vertex_coords.f3,.vertex_scalar.f1,.triangle_indices.i3}" << std::endl;
+      if (!in->perVertex)
+        throw std::runtime_error("no color mapping variable specified");
+      std::cout << UMESH_TERMINAL_RED << "# WARNING - this can take a while!"
+                << UMESH_TERMINAL_DEFAULT << std::endl;
+      std::ofstream vertices(npFilePrefix+".vertex_coords.f3");
+      std::ofstream scalars(npFilePrefix+".vertex_scalars.f1");
+      std::ofstream indices(npFilePrefix+".triangle_indices.i3");
+      for (auto t : result->triangles) 
+        indices.write((const char *)&t,3*sizeof(int));
+      for (int i=0;i<result->vertices.size();i++) {
+        vec3f v = result->vertices[i];
+        vertices.write((const char *)&v,sizeof(v));
+        float f = in->perVertex->values[i];
+        scalars.write((const char *)&f,sizeof(f));
+      }
+    }
     if (outFileName != "") {
       std::cout << "saving to " << outFileName << std::endl;
+      result->finalize();
       result->saveTo(outFileName);
     }
     if (objFileName != "") {

@@ -14,36 +14,38 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
+#include "umesh/extractSurfaceMesh.h"
+#include "umesh/RemeshHelper.h"
 
-#include "umesh/io/IO.h"
-#include "umesh/UMesh.h"
+#ifndef PRINT
+#ifdef __CUDA_ARCH__
+# define PRINT(va) /**/
+# define PING /**/
+#else
+# define PRINT(var) std::cout << #var << "=" << var << std::endl;
+#ifdef __WIN32__
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __FUNCTION__ << std::endl;
+#else
+# define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
+#endif
+#endif
+#endif
 
 namespace umesh {
-  namespace io {
 
-    struct UGrid32Loader {
-      
-      typedef enum
-        { /* try to detect automatically from file name: */
-         AUTO,
-         DOUBLE,
-         FLOAT
-        } VertexFormat;
-      
-      UGrid32Loader(const VertexFormat vertexFormat,
-                    const std::string &dataFileName,
-                    const std::string &scalarFileName);
+  /*! Given a umesh with possibly mixed surface and volumetric
+      eements, create a new umesh that contains _only_ surface
+      elements, and, in particular, only vertices used by these
+      surface elements.
+  */
+  UMesh::SP extractSurfaceMesh(UMesh::SP input)
+  {
+    UMesh::SP output = std::make_shared<UMesh>();
+    RemeshHelper helper(*output);
 
-      static UMesh::SP load(const VertexFormat vertexFormat,
-                            const std::string &dataFileName,
-                            const std::string &scalarFileName="");
-      static UMesh::SP load(const std::string &dataFileName,
-                            const std::string &scalarFileName="")
-      { return load(AUTO,dataFileName,scalarFileName); }
-      
-      UMesh::SP result;
-    };
-
+    for (auto prim : input->createSurfacePrimRefs())
+      helper.add(input,prim);
+    return output;
   }
-}
+} // ::umesh
+

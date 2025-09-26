@@ -14,9 +14,7 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
-CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
-LIST(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
-message("selected cuda arch flags '${ARCH_FLAGS}'")
+#SET(CUDA_NVCC_FLAGS "-gencode=arch=compute_75,code=compute_75")
 
 # ------------------------------------------------------------------
 # compute connectiviy of a umesh, using GPGPU algorithm - once via
@@ -35,6 +33,7 @@ add_executable(umeshComputeFacesCPU
   cpu.cpp
   )
 target_link_libraries(umeshComputeFacesCPU
+  PUBLIC
   umesh
   )
 
@@ -43,5 +42,6 @@ add_executable(umeshComputeFacesREF
   ref.cpp
   )
 target_link_libraries(umeshComputeFacesREF
+  PUBLIC
   umesh
   )

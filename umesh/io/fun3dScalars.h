@@ -29,10 +29,14 @@ namespace umesh {
                    std::vector<std::string> &variables,
                    std::vector<int>         &timeSteps);
 
-      /*! read one time step for one variable, from given file */
+      /*! read one time step for one variable, from given file; the
+          array of global vertex IDs is optional - if set, we'll use
+          it to store that data file's vertex Ids that say where these
+          scalars are supposed to go in the reconstitued single mesh */
       std::vector<float> readTimeStep(const std::string &dataFileName,
                                       const std::string &desiredVariable,
-                                      int desiredTimeStep);
+                                      int desiredTimeStep,
+                                      std::vector<uint64_t> *globalVertexIDs=nullptr);
       
     }
   }

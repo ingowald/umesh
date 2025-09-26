@@ -110,6 +110,14 @@ should produce an obj file that looks like this (ca 19M tris, rendered w/ ospray
 
 ![pic of iso-surface](docs/png/lander-small-iso-0.2.jpg)
 
+## `extractSurfaceMesh` - Extract surface mesh (tris and quads) from a mixed surface/volumetric mesh
+
+Simple tool that read in a umesh file, extracts all surface elements
+into a new mesh (unused vertices get removed), and stores that in obj
+or umesh format.
+
+Also available programmatically via `umesh::extractSurfaceSurfaceMesh(mesh)`.
+
 ## Compute Shared-Face Connectivity
 
 ## Compute Outer Shell
@@ -117,7 +125,6 @@ should produce an obj file that looks like this (ca 19M tris, rendered w/ ospray
 ## Perform Object-Space Partitioning
 
 ## Perform Spatial Partitioning
-
 
 # Importers
 
@@ -131,6 +138,23 @@ our own binary format
 
 the ugrid64 and ugrid32 formats used by various versions of NASA's
 fun3d library.
+
+## Import from a Fun3D data set:`fun3DToUmesh` 
+
+Fun3D data can come in various ways; but apparently, the main form of
+saved fun3D data comes in the following form:
+
+- *one* "lb8" ugrid64 file for the mesh
+
+- *multiple* "volume" files (one per rank); each of these files is for
+one rank's worth of scalars, but can contain multiple variables and
+times steps.
+
+To import one variable and time step's worth of data, use the `fun3DToUMesh` tool:
+
+```
+
+```
 
 ## Nasa Fun3D Mars Lander importer
 
@@ -158,7 +182,6 @@ UMesh info:
 bounds : [(-300,-100,-100):(300,100,100)]
 values : [0:96.9123]
 ```
-
 
 ## OFF
 

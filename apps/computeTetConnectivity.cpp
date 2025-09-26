@@ -33,39 +33,46 @@ namespace umesh {
   
   extern "C" int main(int ac, char **av)
   {
-    std::string inFileName;
-    std::string outFileName;
-    
-    for (int i=1;i<ac;i++) {
-      const std::string arg = av[i];
-      if (arg == "-h")
-        usage();
-      else if (arg == "-o")
-        outFileName = av[++i];
-      else if (arg[0] != '-')
-        inFileName = arg;
-      else
-        usage("unknown cmdline arg "+arg);
-    }
+      try {
+          std::string inFileName;
+          std::string outFileName;
 
-    if (inFileName == "") usage("no input file specified");
-    if (outFileName == "") usage("no output file specified");
-    std::cout << "loading umesh from " << inFileName << std::endl;
-    UMesh::SP in = UMesh::loadFrom(inFileName);
-    
-    if (!in->pyrs.empty() ||
-        !in->wedges.empty() ||
-        !in->hexes.empty())
-      throw std::runtime_error("umesh contains non-tet elements...");
-    
-    std::cout << "computing connectivity" << std::endl;
-    TetConn::SP conn = TetConn::computeFrom(in);
-    
-    std::cout << "done computing connectivity; have a total of "
+          for (int i = 1; i < ac; i++) {
+              const std::string arg = av[i];
+              if (arg == "-h")
+                  usage();
+              else if (arg == "-o")
+                  outFileName = av[++i];
+              else if (arg[0] != '-')
+                  inFileName = arg;
+              else
+                  usage("unknown cmdline arg " + arg);
+          }
+
+          if (inFileName == "") usage("no input file specified");
+          if (outFileName == "") usage("no output file specified");
+          std::cout << "loading umesh from " << inFileName << std::endl;
+          UMesh::SP in = UMesh::loadFrom(inFileName);
+
+          if (!in->pyrs.empty() ||
+              !in->wedges.empty() ||
+              !in->hexes.empty())
+              throw std::runtime_error("umesh contains non-tet elements...");
+
+          std::cout << "computing connectivity" << std::endl;
+          TetConn::SP conn = TetConn::computeFrom(in);
+
+          std::cout << "done computing connectivity; have a total of "
               << prettyNumber(conn->faces.size()) << " faces" << std::endl;
 
-    conn->saveTo(outFileName);
-    std::cout << "done." << std::endl;
-    std::cout << "(for format of the saved file, see umesh/Connectivity.h)" << std::endl;
+          conn->saveTo(outFileName);
+          std::cout << "done." << std::endl;
+          std::cout << "(for format of the saved file, see umesh/Connectivity.h)" << std::endl;
+      }
+      catch (std::exception e) {
+          std::cerr << "fatal error " << e.what() << std::endl;
+          exit(1);
+      } 
+      return 0;
   }  
 } // ::umesh

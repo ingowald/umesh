@@ -1,5 +1,5 @@
 
-/* iw - quick tool to convert from vtk vtu format to ugrid64 format */
+/* iw - quick tool to convert from vtk vtu format to ugrid32 format */
 
 #include <vtkSmartPointer.h>
 #include <vtkXMLUnstructuredGridReader.h>
@@ -37,7 +37,6 @@ void readFile(const std::string fileName)
   vtkUnstructuredGrid *grid = reader->GetOutput();
   
   vtkPointData* pointData = grid->GetPointData();
-  // pointData->PrintSelf(std::cout,vtkIndent());
   size_t firstIndexThisVTU = vertex.size() / 3;
   
   // ==================================================================
@@ -55,7 +54,7 @@ void readFile(const std::string fileName)
   std::cout << " - found " << numCells << " cells" << std::endl;
   for (int cellID=0;cellID<numCells;cellID++) {
     vtkIdType cellPoints;
-    vtkIdType *pointIDs;
+    const vtkIdType *pointIDs;
     grid->GetCellPoints(cellID,cellPoints,pointIDs);
 
     if (cellPoints == 8) {
@@ -84,23 +83,11 @@ void readFile(const std::string fileName)
   if (!cellData)
     throw std::runtime_error("could not read cell data ....");
   
-    // cellData->PrintSelf(std::cout,vtkIndent());
-    // std::cout << "==================================================================" << std::endl;
-    // for (int i = 0; i < cellData->GetNumberOfArrays(); i++) {
-    //   std::cout << "\tArray " << i
-    //             << " is named "
-    //             << (cellData->GetArrayName(i) ? cellData->GetArrayName(i) : "NULL")
-    //             << std::endl;
-    // }
-
   vtkDataArray *dataArray = cellData->GetArray(0);
   if (!dataArray)
     throw std::runtime_error("could not read data array from cell data");
   for (int i=0;i<numCells;i++)
     perCellValue.push_back(dataArray->GetTuple1(i));
-    // std::cout << "   dat[" << i << "] = " << dataArray->GetTuple1(i) << std::endl;
-    // std::cout << "==================================================================" << std::endl;
-  // }
 
   std::cout << "-------------------------------------------------------" << std::endl;
   std::cout << "done reading " << fileName << " : "
@@ -164,8 +151,24 @@ int main ( int argc, char *argv[] )
   for (int i=0;i<numVertices;i++)
     perVertexValue[i] /= (perVertexCount[i] + 1e-20f);
 
+#if 1
+  UMesh::SP mesh = UMesh::create();
+  Attribute::SP attrib
+    = Attribute::create(numVertices);
+  for (int i=0;i<numVertices;i++) {
+    mesh->vertices.push_back(vec3f(vertex[3*i+0],
+                                   vertex[3*i+1],
+                                   vertex[3*i+2]));
+    attrib->values[i] = perVertexValue[i];
+  }
+  mesh->perVertex = attrib;
+  mesh->finalize();
+  mesh->saveTo(outFileName);
+#else
   struct {
-    size_t n_verts, n_tris, n_quads, n_tets, n_pyrs, n_prisms, n_hexes;
+    //size_t
+    uint32_t
+    n_verts, n_tris, n_quads, n_tets, n_pyrs, n_prisms, n_hexes;
   } header;
   header.n_verts  = numVertices;
   header.n_tris   = 0;
@@ -178,7 +181,7 @@ int main ( int argc, char *argv[] )
   std::cout << "=======================================================" << std::endl;
   std::cout << "writing out result ..." << std::endl;
   std::cout << "=======================================================" << std::endl;
-  std::ofstream out(outFileName+".ugrid64");
+  std::ofstream out(outFileName+".ugrid32");
   out.write((char*)&header,sizeof(header));
   out.write((char*)vertex.data(),vertex.size()*sizeof(vertex[0]));
 
@@ -187,6 +190,6 @@ int main ( int argc, char *argv[] )
   
   std::ofstream value_out(outFileName+".scalar");
   value_out.write((char*)perVertexValue.data(),perVertexValue.size()*sizeof(perVertexValue[0]));
-  
-  return EXIT_SUCCESS;
+#endif
+  return EXIT_SUCCESS; 
 }
