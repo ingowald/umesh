@@ -151,6 +151,20 @@ int main ( int argc, char *argv[] )
   for (int i=0;i<numVertices;i++)
     perVertexValue[i] /= (perVertexCount[i] + 1e-20f);
 
+#if 1
+  UMesh::SP mesh = UMesh::create();
+  Attribute::SP attrib
+    = Attribute::create(numVertices);
+  for (int i=0;i<numVertices;i++) {
+    mesh->vertices.push_back(vec3f(vertex[3*i+0],
+                                   vertex[3*i+1],
+                                   vertex[3*i+2]));
+    attrib->values[i] = perVertexValue[i];
+  }
+  mesh->perVertex = attrib;
+  mesh->finalize();
+  mesh->saveTo(outFileName);
+#else
   struct {
     //size_t
     uint32_t
@@ -176,6 +190,6 @@ int main ( int argc, char *argv[] )
   
   std::ofstream value_out(outFileName+".scalar");
   value_out.write((char*)perVertexValue.data(),perVertexValue.size()*sizeof(perVertexValue[0]));
-  
-  return EXIT_SUCCESS;
+#endif
+  return EXIT_SUCCESS; 
 }

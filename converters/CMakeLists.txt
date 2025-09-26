@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ======================================================================== #
 
+add_subdirectory(vtu)
+
 # ------------------------------------------------------------------
 # tools: big lander (the large nasa lander that comes in multiple
 # individual files)
