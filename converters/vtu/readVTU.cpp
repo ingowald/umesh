@@ -1,5 +1,6 @@
 
-/* iw - quick tool to convert from vtk vtu format to ugrid32 format */
+/* iw - quick tool to read at least some types of vtu files (currently
+   supportin only all-hex and only per-cell data files */
 
 #include <vtkSmartPointer.h>
 #include <vtkXMLUnstructuredGridReader.h>
@@ -14,6 +15,7 @@
 #include <vtkRenderWindowInteractor.h>
 #include <vtkProperty.h>
 #include <vtkNamedColors.h>
+#include "umesh/UMesh.h"
 
 std::vector<double> vertex;
 std::vector<double> perCellValue;
@@ -24,6 +26,7 @@ std::vector<size_t> hex_index;
 # define PING std::cout << __FILE__ << "::" << __LINE__ << ": " << __PRETTY_FUNCTION__ << std::endl;
 #endif
 
+using namespace umesh;
 
 void readFile(const std::string fileName)
 {
@@ -152,16 +155,23 @@ int main ( int argc, char *argv[] )
     perVertexValue[i] /= (perVertexCount[i] + 1e-20f);
 
 #if 1
-  UMesh::SP mesh = UMesh::create();
+  UMesh::SP mesh = std::make_shared<UMesh>();
   Attribute::SP attrib
-    = Attribute::create(numVertices);
+    = std::make_shared<Attribute>(numVertices);
   for (int i=0;i<numVertices;i++) {
     mesh->vertices.push_back(vec3f(vertex[3*i+0],
                                    vertex[3*i+1],
                                    vertex[3*i+2]));
     attrib->values[i] = perVertexValue[i];
   }
+  for (int j=0;j<hex_index.size()/8;j++) {
+    UMesh::Hex hex;
+    for (int i=0;i<8;i++)
+      hex[i] = hex_index[8*j+i];
+    mesh->hexes.push_back(hex);
+  }
   mesh->perVertex = attrib;
+  mesh->perVertex->finalize();
   mesh->finalize();
   mesh->saveTo(outFileName);
 #else
