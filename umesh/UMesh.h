@@ -283,7 +283,7 @@ namespace umesh {
     
     typedef std::shared_ptr<UMesh> SP;
 
-    typedef enum { TRI, QUAD, TET, PYR, WEDGE, HEX, GRID, INVALID } PrimType;
+    typedef enum { TRI, QUAD, TET, PYR, WEDGE, HEX, GRID, POLYHEDRON, INVALID } PrimType;
     
     struct PrimRef {
       inline PrimRef() {}
@@ -305,7 +305,7 @@ namespace umesh {
     /*! returns total numer of volume elements */
     inline size_t numVolumeElements() const
     {
-      return size()+pyrs.size()+wedges.size()+hexes.size()+grids.size();
+      return size()+pyrs.size()+wedges.size()+hexes.size()+grids.size()+polyOffsets.size();
     }
 
     /*! appends another mesh's vertices and primitmives to this
@@ -320,7 +320,7 @@ namespace umesh {
     inline size_t numCells() const
     {
       size_t numIndividual
-        = tets.size()+pyrs.size()+wedges.size()+hexes.size();
+        = tets.size()+pyrs.size()+wedges.size()+hexes.size()+polyOffsets.size();
       size_t numVoxelsInGrids = 0;
       for (auto grid : grids)
         numVoxelsInGrids += grid.numCells.x*grid.numCells.y*grid.numCells.z;
@@ -379,7 +379,8 @@ namespace umesh {
         tets.size()+
         wedges.size()+
         pyrs.size()+
-        grids.size();
+        grids.size()+
+        polyOffsets.size();
     }
 
     inline range1f getValueRange() const {
@@ -499,17 +500,34 @@ namespace umesh {
       // return r;
     }
     
+    inline range1f getPolyValueRange(const size_t ID) const
+    {
+      assert(ID < polyOffsets.size());
+      assert(perVertex);
+      int pos = polyOffsets[ID];
+      int numFaces = polyFaceStream[pos++];
+      range1f r;
+      for (int f = 0; f < numFaces; f++) {
+        int numPts = polyFaceStream[pos++];
+        for (int p = 0; p < numPts; p++) {
+          r.extend(perVertex->values[polyFaceStream[pos++]]);
+        }
+      }
+      return r;
+    }
+
     inline range1f getValueRange(const PrimRef &pr) const
     {
       switch(pr.type) {
-      case TRI:  return getTriValueRange(pr.ID);
-      case QUAD: return getQuadValueRange(pr.ID);
-      case TET:  return getTetValueRange(pr.ID);
-      case PYR:  return getPyrValueRange(pr.ID);
-      case WEDGE:return getWedgeValueRange(pr.ID);
-      case HEX:  return getHexValueRange(pr.ID);
-      case GRID: return getGridValueRange(pr.ID);
-      default: 
+      case TRI:        return getTriValueRange(pr.ID);
+      case QUAD:       return getQuadValueRange(pr.ID);
+      case TET:        return getTetValueRange(pr.ID);
+      case PYR:        return getPyrValueRange(pr.ID);
+      case WEDGE:      return getWedgeValueRange(pr.ID);
+      case HEX:        return getHexValueRange(pr.ID);
+      case GRID:       return getGridValueRange(pr.ID);
+      case POLYHEDRON: return getPolyValueRange(pr.ID);
+      default:
         throw std::runtime_error("not implemented");
       };
     }
@@ -596,17 +614,33 @@ namespace umesh {
       return b;
     }
     
+    inline box3f getPolyBounds(const size_t ID) const
+    {
+      assert(ID < polyOffsets.size());
+      int pos = polyOffsets[ID];
+      int numFaces = polyFaceStream[pos++];
+      box3f b;
+      for (int f = 0; f < numFaces; f++) {
+        int numPts = polyFaceStream[pos++];
+        for (int p = 0; p < numPts; p++) {
+          b.extend(vertices[polyFaceStream[pos++]]);
+        }
+      }
+      return b;
+    }
+
     inline box3f getBounds(const PrimRef &pr) const
     {
       switch(pr.type) {
-      case TRI:    return getTriBounds(pr.ID);
-      case QUAD:   return getQuadBounds(pr.ID);
-      case TET:    return getTetBounds(pr.ID);
-      case PYR:    return getPyrBounds(pr.ID);
-      case WEDGE:  return getWedgeBounds(pr.ID);
-      case HEX:    return getHexBounds(pr.ID);
-      case GRID:   return getGridBounds(pr.ID);
-      default: 
+      case TRI:        return getTriBounds(pr.ID);
+      case QUAD:       return getQuadBounds(pr.ID);
+      case TET:        return getTetBounds(pr.ID);
+      case PYR:        return getPyrBounds(pr.ID);
+      case WEDGE:      return getWedgeBounds(pr.ID);
+      case HEX:        return getHexBounds(pr.ID);
+      case GRID:       return getGridBounds(pr.ID);
+      case POLYHEDRON: return getPolyBounds(pr.ID);
+      default:
         throw std::runtime_error("primitive type #"
                                  +std::to_string((int)pr.type)+" not implemented");
       };
@@ -649,6 +683,16 @@ namespace umesh {
         array first contains all scalars for grid[0], then fro grid[1],
         etc */
     std::vector<float> gridScalars;
+
+    // -------------------------------------------------------
+    // polyhedral volume elements:
+    // -------------------------------------------------------
+    /*! packed face streams for all polyhedra. Each polyhedron's
+        entry is: numFaces, numPtsInFace0, vtx0, vtx1, ...,
+        numPtsInFace1, vtx0, vtx1, ... */
+    std::vector<int> polyFaceStream;
+    /*! offset into polyFaceStream for each polyhedron */
+    std::vector<int> polyOffsets;
 
     /*! in some cases, it makes sense to allow for storing a
       user-provided per-vertex tag (may be empty) */

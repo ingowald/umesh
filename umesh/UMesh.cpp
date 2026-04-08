@@ -267,7 +267,7 @@ namespace umesh {
     tag) for every volumetric prim in this mesh */
   void UMesh::createVolumePrimRefs(std::vector<UMesh::PrimRef> &result)
   {
-    result.resize(tets.size()+pyrs.size()+wedges.size()+hexes.size()+grids.size());
+    result.resize(tets.size()+pyrs.size()+wedges.size()+hexes.size()+grids.size()+polyOffsets.size());
     parallel_for_blocked
       (0ull,tets.size(),64*1024,
        [&](size_t begin,size_t end){
@@ -297,6 +297,13 @@ namespace umesh {
        [&](size_t begin,size_t end){
          for (size_t i=begin;i<end;i++)
            result[tets.size()+pyrs.size()+wedges.size()+hexes.size()+i] = PrimRef(GRID,i);
+       });
+    size_t polyBase = tets.size()+pyrs.size()+wedges.size()+hexes.size()+grids.size();
+    parallel_for_blocked
+      (0ull,polyOffsets.size(),64*1024,
+       [&](size_t begin,size_t end){
+         for (size_t i=begin;i<end;i++)
+           result[polyBase+i] = PrimRef(POLYHEDRON,i);
        });
   }
 
