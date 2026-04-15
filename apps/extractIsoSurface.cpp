@@ -43,6 +43,32 @@ namespace umesh {
     std::cout << "Usage: ./umeshExtractIsoSurface <in.umesh> -iso scalarValue (-o <out.umesh> | --obj file.obj)" << std::endl;;
     exit (error != "");
   };
+
+
+          // = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
+  std::vector<float> readFloatScalars(const std::string &fileName,
+                                      vec3i brickIndex,
+                                      vec3i brickCount,
+                                      vec3i dims)
+  {
+    std::vector<float> scalars
+      = io::wholeFile::readVectorOf<float>(fileName);
+    if (brickCount == vec3i(1,1,1))
+      return scalars;
+
+    vec3i my_begin = (brickIndex * (dims-vec3i(1))) / brickCount;
+    vec3i my_end = ((brickIndex+vec3i(1)) * (dims-vec3i(1))) / brickCount;
+
+    std::vector<float> slice;
+    for (int64_t iz=my_begin.z;iz<=my_end.z;iz++)
+      for (int64_t iy=my_begin.y;iy<=my_end.y;iy++) {
+        for (int64_t ix=my_begin.x;ix<=my_end.x;ix++) {
+          float f = scalars[ix+iy*dims.x+iz*dims.x*dims.y];
+          slice.push_back(f);
+        }
+      }
+    return slice;
+  }
   
   extern "C" int main(int ac, char **av)
   {
@@ -53,6 +79,12 @@ namespace umesh {
     std::string outFileName;
     std::string objFileName;
     std::string npFilePrefix;
+
+    /*! @{ for mapping when using slicing */
+    vec3i brickCount(1,1,1);
+    vec3i dims(1,1,1);
+    vec3i brickIndex(0,0,0);
+    /*! @} */
     
     /*! if enabled, we'll only save the tets that _we_ created, not
       those that were in the file initially */
@@ -74,6 +106,21 @@ namespace umesh {
         objFileName = av[++i];
       else if (arg[0] != '-')
         inFileName = arg;
+      else if (arg == "-id" || arg == "--input-dims" || arg == "-dims") {
+        dims.x = std::stoi(av[++i]);
+        dims.y = std::stoi(av[++i]);
+        dims.z = std::stoi(av[++i]);
+      }
+      else if (arg == "--brick-index") {
+        brickIndex.x = std::stoi(av[++i]);
+        brickIndex.y = std::stoi(av[++i]);
+        brickIndex.z = std::stoi(av[++i]);
+      }
+      else if (arg == "--brick-count") {
+        brickCount.x = std::stoi(av[++i]);
+        brickCount.y = std::stoi(av[++i]);
+        brickCount.z = std::stoi(av[++i]);
+      }
       else
         usage("unknown cmd-line arg '"+arg+"'");
     }
@@ -89,7 +136,10 @@ namespace umesh {
     UMesh::SP in = UMesh::loadFrom(inFileName);
     if (!isoScalarsFileName.empty()) {
       in->perVertex = std::make_shared<Attribute>();
-      in->perVertex->values = io::wholeFile::readVectorOf<float>(isoScalarsFileName);
+      in->perVertex->values
+        // = io::wholeFile::readVectorOf<float>(isoScalarsFileName);
+        = readFloatScalars(isoScalarsFileName,
+                           brickIndex,brickCount,dims);
     }
     std::vector<float> mappedScalars;
     if (mappedScalarsFileName == ":y") {
@@ -100,7 +150,10 @@ namespace umesh {
         mappedScalars.push_back(v.z);
     } else
       if (!mappedScalarsFileName.empty())
-        mappedScalars = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
+        mappedScalars
+          // = io::wholeFile::readVectorOf<float>(mappedScalarsFileName);
+          = readFloatScalars(mappedScalarsFileName,
+                             brickIndex,brickCount,dims);
 
     if (mappedScalarsFileName.empty())
       std::cout << "no mapping of any scalar to egnerated iso-surface" << std::endl;
