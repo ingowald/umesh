@@ -37,7 +37,8 @@
 
 namespace umesh {
   
-  const size_t bum_magic = 0x234235568ULL;
+  // const size_t bum_magic = 0x234235568ULL;
+  const size_t bum_magic = 0x234235569ULL;
   
   /*! can be used to turn on/off logging/diagnostic messages in entire
     umesh library */
@@ -88,6 +89,10 @@ namespace umesh {
     io::writeVector(out,hexes);
     io::writeVector(out,grids);
     io::writeVector(out,gridScalars);
+
+    io::writeVector(out,polyFaceStream);
+    io::writeVector(out,polyOffsets);
+    
     io::writeVector(out,vertexTags);
   }
   
@@ -142,20 +147,44 @@ namespace umesh {
   /*! read from given (binary) stream */
   void UMesh::readFrom(std::istream &in)
   {
-    const size_t bum_magic_old = 0x234235567ULL;
+    const size_t bum_magic_preGrids = 0x234235567ULL;
+    const size_t bum_magic_prePolyhedra = 0x234235568ULL;
     bool hasGrids = true;
+    bool hasPolyhedra = true;
     size_t magic;
     io::readElement(in,magic);
     if (magic == 0x234235566ULL) {
+      /* iw this is for a REALLY old file format that we _probably_ no
+         longer need (I dont' think any umesh files of that format are
+         still in existence.... but ... */
       read_566(this,in); return;
     }
-    
-    if (magic != bum_magic)
-      {
-        if (magic != bum_magic_old)
-          throw std::runtime_error("wrong magic number in umesh file ...");
-        hasGrids = false;
-      }
+
+    switch(magic) {
+    case bum_magic:
+      // this is the current, latest file format. it has grids and polyedra.
+      hasGrids     = true;
+      hasPolyhedra = true;
+      break;
+    case bum_magic_prePolyhedra:
+      // this is 'original' umesh with added support for grids, but
+      // not yet polyhedra. we can read this if we know the file
+      // doesn't have that data, but we _do_ have to know that we
+      // shouln't even try.
+      hasGrids     = true;
+      hasPolyhedra = false;
+      break;
+    case bum_magic_preGrids:
+      // this is 'original' umesh that didn't know of either grids or
+      // polyhedra. we can read this if we know the file doesn't have
+      // that data, but we _do_ have to know that we shouln't even
+      // try.
+      hasGrids     = false;
+      hasPolyhedra = false;
+      break;
+    default:
+      throw std::runtime_error("wrong magic number in umesh file ...");
+    };
     io::readVector(in,this->vertices,"vertices");
     size_t numPerVertexAttributes = 1;
     io::readElement(in,numPerVertexAttributes);
@@ -183,6 +212,12 @@ namespace umesh {
       io::readVector(in,this->grids,"grids");
       io::readVector(in,this->gridScalars,"gridScalars");
     }
+
+    // version 0x234235569ULL: polyhedra:
+    if (hasPolyhedra) {
+      io::readVector(in,this->polyFaceStream,"polyFaceStream");
+      io::readVector(in,this->polyOffsets,"polyOffsets");
+    }
     // try {
     if (!in.eof())
       try {
@@ -190,9 +225,10 @@ namespace umesh {
       } catch (...) {
         /* ignore ... */
       }
-  
+    
     this->finalize();
   }
+  
 
   /*! read from given file, assuming file format as used by saveTo() */
   UMesh::SP UMesh::loadFrom(const std::string &fileName)
@@ -541,7 +577,7 @@ namespace umesh {
   {
     std::stringstream ss;
 
-    if (compact) {
+    if (compact) { 
       ss << "UMesh(";
       ss << "#verts=" << prettyNumber(vertices.size());
       if (!triangles.empty())
@@ -559,6 +595,9 @@ namespace umesh {
       if (!grids.empty())
         ss << ",#grids=" << prettyNumber(grids.size())
            << " (with " << prettyNumber(gridScalars.size()) << " grid scalars)";
+      if (!polyOffsets.empty())
+        ss << ",#polys=" << prettyNumber(polyOffsets.size())
+           << " (with total of  " << prettyNumber(polyFaceStream.size()) << " indices for encoding the faces)";
       if (perVertex) {
         ss << ",scalars=yes(name='" << perVertex->name << "')";
       } else {
@@ -586,6 +625,9 @@ namespace umesh {
       ss << "#hexes : " << prettyNumber(hexes.size()) << std::endl;
       ss << "#grids : " << prettyNumber(grids.size())
  << " (with " << prettyNumber(gridScalars.size()) << " grid scalars)" << std::endl;
+      ss << "#polys : " << prettyNumber(polyOffsets.size()) 
+         << " (with total of " << prettyNumber(polyFaceStream.size())
+         << " indices for encoding the faces)" << std::endl;
       if  (!bounds.empty())
         ss << "bounds : " << bounds << std::endl;
       if (perVertex) {
