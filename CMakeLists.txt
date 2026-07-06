@@ -1,5 +1,5 @@
 # ======================================================================== #
-# Copyright 2018-2022 Ingo Wald                                            #
+# Copyright 2018-2026 Ingo Wald                                            #
 #                                                                          #
 # Licensed under the Apache License, Version 2.0 (the "License");          #
 # you may not use this file except in compliance with the License.         #
@@ -17,7 +17,7 @@
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 option(UMESH_USE_CUDA "Build w/ CUDA support?" OFF)
 option(UMESH_USE_VTK "Build w/ VTK support?" OFF)
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.24)
 
 if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
