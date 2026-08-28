@@ -78,13 +78,14 @@ namespace umesh {
     std::string mappedScalarsFileName;
     std::string outFileName;
     std::string objFileName;
-    std::string npFilePrefix;
+    std::string tstriFileName;
 
     /*! @{ for mapping when using slicing */
     vec3i brickCount(1,1,1);
     vec3i dims(1,1,1);
     vec3i brickIndex(0,0,0);
     /*! @} */
+    bool tsTriFormat = false;
     
     /*! if enabled, we'll only save the tets that _we_ created, not
       those that were in the file initially */
@@ -94,8 +95,10 @@ namespace umesh {
         usage();
       else if (arg == "-o")
         outFileName = av[++i];
-      else if (arg == "-o:np")
-        npFilePrefix = av[++i];
+      else if (arg == "--tstri")
+        tsTriFormat = true;
+      // else if (arg == "-o:np")
+      //   npFilePrefix = av[++i];
       else if (arg == "-ms" || arg == "--mapped-scalars")
         mappedScalarsFileName = av[++i];
       else if (arg == "-is" || arg == "--iso-scalars")
@@ -127,7 +130,8 @@ namespace umesh {
     
     if (inFileName == "")
       usage("no input file specified");
-    if (outFileName == "" && objFileName == "" && npFilePrefix == "")
+    if (outFileName == "" && objFileName == ""// && npFilePrefix == ""
+        )
       usage("neither obj nor umesh output file specified");
     if (isoValue == std::numeric_limits<float>::infinity())
       usage("no iso-value specified");
@@ -178,29 +182,44 @@ namespace umesh {
     
     UMesh::SP result = extractIsoSurface(in,isoValue,mappedScalars);
     std::cout << "done extracting isovalue, found " << result->toString() << std::endl;
-    if (npFilePrefix != "") {
-      std::cout << "writing in raw numpy arrays format to " << npFilePrefix
-                << "{.vertex_coords.f3,.vertex_scalar.f1,.triangle_indices.i3}" << std::endl;
-      if (!in->perVertex)
-        throw std::runtime_error("no color mapping variable specified");
-      std::cout << UMESH_TERMINAL_RED << "# WARNING - this can take a while!"
-                << UMESH_TERMINAL_DEFAULT << std::endl;
-      std::ofstream vertices(npFilePrefix+".vertex_coords.f3");
-      std::ofstream scalars(npFilePrefix+".vertex_scalars.f1");
-      std::ofstream indices(npFilePrefix+".triangle_indices.i3");
-      for (auto t : result->triangles) 
-        indices.write((const char *)&t,3*sizeof(int));
-      for (int i=0;i<result->vertices.size();i++) {
-        vec3f v = result->vertices[i];
-        vertices.write((const char *)&v,sizeof(v));
-        float f = in->perVertex->values[i];
-        scalars.write((const char *)&f,sizeof(f));
-      }
-    }
+    // if (npFilePrefix != "") {
+    //   std::cout << "writing in raw numpy arrays format to " << npFilePrefix
+    //             << "{.vertex_coords.f3,.vertex_scalar.f1,.triangle_indices.i3}" << std::endl;
+    //   if (!in->perVertex)
+    //     throw std::runtime_error("no color mapping variable specified");
+    //   std::cout << UMESH_TERMINAL_RED << "# WARNING - this can take a while!"
+    //             << UMESH_TERMINAL_DEFAULT << std::endl;
+    //   std::ofstream vertices(npFilePrefix+".vertex_coords.f3");
+    //   std::ofstream scalars(npFilePrefix+".vertex_scalars.f1");
+    //   std::ofstream indices(npFilePrefix+".triangle_indices.i3");
+    //   for (auto t : result->triangles) 
+    //     indices.write((const char *)&t,3*sizeof(int));
+    //   for (int i=0;i<result->vertices.size();i++) {
+    //     vec3f v = result->vertices[i];
+    //     vertices.write((const char *)&v,sizeof(v));
+    //     float f = in->perVertex->values[i];
+    //     scalars.write((const char *)&f,sizeof(f));
+    //   }
+    // }
     if (outFileName != "") {
       std::cout << "saving to " << outFileName << std::endl;
-      result->finalize();
-      result->saveTo(outFileName);
+      if (tsTriFormat) {
+        std::ofstream out(outFileName,std::ios::binary);
+        for (auto idx : result->triangles) {
+          const auto push = [&](int vtxID) {
+            auto v = result->vertices[vtxID];
+            out.write((const char *)&v,sizeof(v));
+            float f = result->perVertex->values[vtxID];
+            out.write((const char *)&f,sizeof(f));
+          };
+          push(idx.x);
+          push(idx.y);
+          push(idx.z);
+        }
+      } else {
+        result->finalize();
+        result->saveTo(outFileName);
+      }
     }
     if (objFileName != "") {
       std::cout << "writing in OBJ format to " << objFileName << std::endl;
